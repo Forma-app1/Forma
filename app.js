@@ -137,7 +137,8 @@ function weeklyReview(){
 
 /* ===== البرنامج ===== */
 const prog=()=>PROGRAMS[S.prog];
-const sName=n=>n.length<=1?"Day "+n:n;
+const wkL=n=>n+(n>=3&&n<=10?" أسابيع":" أسبوع");
+const sName=n=>n.length<=1?"اليوم "+n:n;
 const sessIdx=()=>S.sessionIdx%prog().sessions.length;
 const exName=(si,i)=>{const sw=S.swaps[S.prog]||{};return sw[si+"|"+i]||prog().sessions[si].ex[i][0]};
 function lastFor(ex){for(let i=S.history.length-1;i>=0;i--){const h=S.history[i];if(h.sets&&h.sets[ex])return h.sets[ex]}return null}
@@ -172,7 +173,7 @@ function vSetup(){
     </div>
     <div class="card"><div class="flabel">هدفك</div><div class="seg" style="grid-template-columns:repeat(3,1fr);margin-top:8px">${GOALS.map((g,i)=>`<button type="button" data-ob="goal" data-v="${i}" aria-pressed="${ob.goal==i}">${g[0]}<small>${g[1]}</small></button>`).join("")}</div></div>
     <div class="card"><div class="flabel">نشاطك</div><div class="seg" style="grid-template-columns:repeat(2,1fr);margin-top:8px">${ACT.map((a,i)=>`<button type="button" data-ob="act" data-v="${i}" aria-pressed="${ob.act==i}">${a[0]}<small>${a[1]}</small></button>`).join("")}</div></div>
-    <div class="card"><div class="flabel">برنامج التمرين</div><div class="seg" style="grid-template-columns:1fr;margin-top:8px">${PORDER.map(k=>{const p=PROGRAMS[k];return `<button type="button" class="prog-opt" data-ob="prog" data-v="${k}" aria-pressed="${ob.prog===k}"><span>${p.ar}<small>${p.days} أيام بالأسبوع · ${p.level}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${p.name}</span></button>`}).join("")}</div></div>
+    <div class="card"><div class="flabel">برنامج التمرين</div><div class="seg" style="grid-template-columns:1fr;margin-top:8px">${PORDER.map(k=>{const p=PROGRAMS[k];return `<button type="button" class="prog-opt" data-ob="prog" data-v="${k}" aria-pressed="${ob.prog===k}"><span>${p.ar}<small>${p.days} أيام بالأسبوع · ${wkL(p.weeks)}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${p.name}</span></button>`}).join("")}</div></div>
     <p class="note">FORMA للأصحاء فوق 18 سنة. إذا عندك مرض مزمن، أو حامل، أو ترضعين، راجع طبيبك قبل تبدأ.</p>
     <button type="submit" class="primary wide">${edit?"احفظ":"جهّز خطتي"}</button>
     ${edit?`<button type="button" class="ghost" data-go="settings">إلغاء</button>`:""}
@@ -248,7 +249,7 @@ function vToday(){
   </div>
   <div class="card stack">
     <div class="row"><span class="lbl">تمرينك الجاي</span><span class="pill">${P.ar}</span></div>
-    <div class="row"><div class="num" style="font-size:24px;font-weight:800" dir="ltr">${sName(nx.n)}</div><span class="sub">${nx.ex.length} تمارين</span></div>
+    <div class="row"><div class="num" style="font-size:24px;font-weight:800" dir="auto">${sName(nx.n)}</div><span class="sub">${nx.day?"يومه المقترح "+nx.day+" · ":""}${nx.ex.length} تمارين</span></div>
     <div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div>
     <div class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()} · يمشي بالترتيب، لو ريّحت يوم يبقى ينتظرك</div>
     ${S.days[T]?.trained?`<span class="pill" style="align-self:flex-start">تمرّنت اليوم</span>`:`<button class="ink" data-go="train">ابدأ التمرين</button>`}
@@ -395,8 +396,8 @@ function vTrain(){
   const P=prog(),si=sessIdx(),s=P.sessions[si];
   if(!live||live.k!==S.prog+si)live={k:S.prog+si,v:{}};
   return `
-  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${P.days} أيام بالأسبوع</span><div class="row"><h1 class="num" dir="ltr">${sName(s.n)}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
-  <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="ltr">${sName(x.n)}</button>`).join("")}</div>
+  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${P.days} أيام بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${sName(s.n)}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
+  <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${sName(x.n)}</button>`).join("")}</div>
   <details class="card flat"><summary>طريقة التمرين في FORMA ‹</summary><ul class="guide" style="margin-top:8px">
     <li>اكتب الوزن والعدات لكل جولة. الخانة الفاضية تاخذ رقم المرة الماضية، فإذا كررته اضغط ✓ بس.</li>
     <li>وقّف قبل الفشل بعدة أو عدتين. آخر جولة في تمارين العزل كمّلها للفشل.</li>
@@ -496,7 +497,7 @@ function vSettings(){
       <li>الدهون 25% من سعراتك، والباقي كارب.</li>
       <li>كل أسبوع يراجع FORMA متوسط وزنك، ويقترح تعديل إذا نزولك أو زيادتك طلعت عن المطلوب.</li></ul></details>
   </div>
-  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${PORDER.map(k=>{const pp=PROGRAMS[k];return `<button class="prog-opt" data-prog="${k}" aria-pressed="${S.prog===k}"><span>${pp.ar}<small>${pp.days} أيام · ${pp.weeks} أسابيع · ${pp.level}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${pp.name}</span></button>`}).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p></div>
+  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${PORDER.map(k=>{const pp=PROGRAMS[k];return `<button class="prog-opt" data-prog="${k}" aria-pressed="${S.prog===k}"><span>${pp.ar}<small>${pp.days} أيام بالأسبوع · ${wkL(pp.weeks)}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${pp.name}</span></button>`}).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p></div>
   <div class="card stack"><h2>بياناتي</h2><button data-go="setup">عدّل الطول والوزن والهدف</button>
     <div class="grid2"><button id="exportB">نسخة احتياطية</button><button id="importB">استرجاع نسخة</button></div><input type="file" id="importF" accept="application/json,.json" hidden>
     <p class="note">بياناتك محفوظة على جهازك بس. خذ نسخة احتياطية قبل ما تغيّر جوالك.</p>
