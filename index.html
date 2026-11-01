@@ -210,6 +210,17 @@ svg text{fill:var(--muted);font-size:11px;font-family:var(--body)}
 input.ed-reps{width:96px;padding:8px 10px}
 .ed-add{background:transparent;color:var(--accent);box-shadow:none;border:1.5px dashed var(--line);font-weight:700}
 .ed-day .swap{white-space:nowrap;flex:none}
+.say{border:1.5px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.say-in{display:flex;gap:8px;align-items:center}
+.say-in input{flex:1}
+.say-in .primary{padding-inline:18px;white-space:nowrap}
+.mic{width:46px;height:46px;flex:none;padding:0;border-radius:14px;display:grid;place-items:center;background:var(--raise);box-shadow:0 0 0 1px var(--line) inset;color:var(--ink)}
+.mic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.mic.on{background:var(--hot);color:#fff;box-shadow:none;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.6}}
+.say-row{padding:10px 0;border-bottom:1px solid var(--line);display:grid;gap:8px}
+.say-sel{width:100%;font:inherit;font-weight:700;padding:10px 12px;border-radius:12px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--surface);color:var(--ink)}
+input.say-amt{width:96px;text-align:center;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -231,6 +242,7 @@ input.ed-reps{width:96px;padding:8px 10px}
 </div></nav>
 <script src="foods.js"></script>
 <script src="programs.js"></script>
+<script src="smart.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

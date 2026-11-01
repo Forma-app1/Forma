@@ -49,6 +49,7 @@ const dateAr=k=>{try{return parseKey(k).toLocaleDateString("ar-u-nu-latn",{day:"
 function toast(msg){document.querySelectorAll(".toast").forEach(t=>t.remove());const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 const ICON={
 flame:'<svg viewBox="0 0 24 24" aria-hidden="true"><path class="flame" d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z"/></svg>',
+mic:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
 gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
 };
 
@@ -281,6 +282,9 @@ function vFood(){
   return `
   <div class="daybar"><button id="prevD" aria-label="اليوم السابق">→</button><div class="center" style="min-width:0"><div class="d">${label}</div><div class="sub num">${fmt(t.k)} / ${fmt(g.kcal)} سعرة · ${fmt(t.p)} / ${g.p} بروتين</div></div><button id="nextD" aria-label="اليوم التالي" ${foodDay===today()?"disabled":""}>←</button></div>
   <div class="progress"><i style="width:${clamp(t.k/g.kcal*100,0,100)}%"></i></div>
+  <form class="card stack say" id="sayF" autocomplete="off"><div class="row"><h2>قول وش أكلت</h2><span class="pill">جديد</span></div>
+    <div class="say-in"><input type="text" id="sayIn" enterkeyhint="done" placeholder="مثال: ٣ بيض وخبزة وكوب لبن" dir="auto" aria-label="اكتب وش أكلت">${SR?`<button type="button" id="sayMic" class="mic" aria-label="تكلم">${ICON.mic}</button>`:""}<button type="submit" class="primary">تم</button></div>
+    <p class="note">${SR?"اكتب أو اضغط المايك وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام.":"اكتب، أو اضغط مايك الكيبورد وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام."}</p></form>
   <div class="row"><input type="search" id="q" placeholder="ابحث: كبسة، بيض، البيك…" value="${esc(q)}" autocomplete="off" aria-label="ابحث عن أكلة"><button id="quick" style="white-space:nowrap">+ سريعة</button></div>
   <div class="chips" role="group" aria-label="الأقسام">${["الكل","وجباتي","أكلاتي","مطاعم",...CATS.filter(c=>!RESTS.includes(c))].map(c=>`<button class="chip" data-cat="${c}" aria-pressed="${c===cat}">${c}</button>`).join("")}</div>
   <div class="card"><div id="results"></div></div>
@@ -455,6 +459,52 @@ function finish(){
   toast(prs.length?`رقم جديد في ${prs[0]}. الجاي ${sName(P.sessions[S.sessionIdx].n)}`:`انحفظ تمرينك. الجاي ${sName(P.sessions[S.sessionIdx].n)}`);
 }
 
+/* ===== قول وش أكلت ===== */
+const SRC=window.SpeechRecognition||window.webkitSpeechRecognition,SR=!!SRC;
+let rec=null;
+function listen(btn){
+  if(rec){try{rec.stop()}catch(e){}return}
+  try{rec=new SRC();rec.lang="ar-SA";rec.interimResults=true;rec.continuous=false}catch(e){rec=null;return toast("المايك ما اشتغل. استخدم مايك الكيبورد")}
+  const inp=$("#sayIn");btn.classList.add("on");
+  rec.onresult=e=>{let t="";for(const r of e.results)t+=r[0].transcript;inp.value=t};
+  rec.onerror=e=>{toast(e.error==="not-allowed"?"اسمح للمايك من إعدادات المتصفح":"ما سمعتك زين. جرّب مرة ثانية")};
+  rec.onend=()=>{btn.classList.remove("on");rec=null;if(inp.value.trim())openSay(inp.value)};
+  try{rec.start()}catch(e){rec=null;btn.classList.remove("on")}
+}
+function openSay(text){
+  text=String(text||"").trim();if(!text)return toast("اكتب وش أكلت");
+  if(!window.FORMA_SAY)return toast("حدّث الصفحة وجرّب");
+  const res=FORMA_SAY.parse(text,{foods:FOODS.concat(S.custom),stores:[...RESTS,"الحطب","المراعي","ندى"],recent:S.recent,lastAmt:S.lastAmt,learned:S.learned||{}});
+  if(!res.items.length){q=text;cat="الكل";const qi=$("#q");if(qi){qi.value=res.miss[0]||text}q=res.miss[0]||text;renderResults();return toast("ما عرفتها. دوّرها في البحث أو أضفها سريعة")}
+  let meal=res.meal||defaultMeal();
+  const its=res.items.map(it=>({...it,fid:it.f.fid}));
+  sheet((sh,close)=>{
+    sh.setAttribute("aria-label","تأكيد الأكل");
+    const draw=()=>{
+      let tk=0,tp=0;its.forEach(it=>{const m=macrosOf(getFood(it.fid),it.amt);tk+=m.k;tp+=m.p});
+      sh.innerHTML=`<div class="grab"></div><h2>فهمت كذا</h2><p class="note" style="margin:2px 0 10px">تأكد من الأكلة والكمية. اضغط الاسم إذا تبي غيره.</p>
+      <div class="stack" style="gap:10px">${its.map((it,i)=>{const f=getFood(it.fid),m=macrosOf(f,it.amt);return `<div class="say-row">
+        <select class="say-sel" data-si="${i}" aria-label="الأكلة">${it.alts.map(a=>`<option value="${a.fid}" ${a.fid===it.fid?"selected":""}>${esc(a.n)}</option>`).join("")}</select>
+        <div class="row" style="gap:8px"><input type="number" inputmode="decimal" class="say-amt" data-sa="${i}" value="${it.amt}" aria-label="الكمية"><span class="sub" style="white-space:nowrap">${f.u==="g"?"جم":"حبة"}</span><span class="m num" style="margin-inline-start:auto;white-space:nowrap" data-sm="${i}">${fmt(m.k)} · ${fmt(m.p)}ب</span><button class="del" data-sd="${i}" aria-label="احذف">×</button></div>
+      </div>`}).join("")}
+      ${res.miss.map(x=>`<div class="note">ما عرفت "${esc(x)}". <button class="ghost" data-sq="${esc(x)}" style="padding:0 4px">دوّرها</button></div>`).join("")}</div>
+      <div class="meals" style="margin-top:12px">${MEALS.map(x=>`<button data-m="${x}" aria-pressed="${x===meal}">${x}</button>`).join("")}</div>
+      <button class="primary wide" id="sayAdd" style="margin-top:12px" ${its.length?"":"disabled"}>أضف ${fmt(tk)} سعرة · ${fmt(tp)} بروتين</button>`};
+    draw();
+    sh.addEventListener("change",e=>{const i=e.target.dataset.si;if(i==null)return;const it=its[+i],f=getFood(e.target.value);if(!f)return;
+      it.fid=f.fid;it.amt=Math.round(FORMA_SAY.amtFor(f,{...it.q,last:S.lastAmt&&S.lastAmt[f.fid]})*100)/100;S.learned=S.learned||{};S.learned[it.key]=f.fid;draw()});
+    sh.addEventListener("input",e=>{const i=e.target.dataset.sa;if(i==null)return;const v=parseFloat(e.target.value);if(!(v>0))return;its[+i].amt=v;
+      const m=macrosOf(getFood(its[+i].fid),v);sh.querySelector(`[data-sm="${i}"]`).textContent=`${fmt(m.k)} · ${fmt(m.p)}ب`;
+      let tk=0,tp=0;its.forEach(it=>{const mm=macrosOf(getFood(it.fid),it.amt);tk+=mm.k;tp+=mm.p});sh.querySelector("#sayAdd").textContent=`أضف ${fmt(tk)} سعرة · ${fmt(tp)} بروتين`});
+    sh.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+      if(b.dataset.m){meal=b.dataset.m;return draw()}
+      if(b.dataset.sd!=null){its.splice(+b.dataset.sd,1);if(!its.length&&!res.miss.length)return close();return draw()}
+      if(b.dataset.sq!=null){close();q=b.dataset.sq;cat="الكل";const qi=$("#q");if(qi)qi.value=q;renderResults();qi&&qi.focus();return}
+      if(b.id==="sayAdd"){const k=targetDay();its.forEach(it=>{if(it.amt>0){day(k).food.push({fid:it.fid,amt:it.amt,meal});pushRecent(it.fid)}});
+        its.forEach(it=>{S.learned=S.learned||{};S.learned[it.key]=it.fid});close();afterAdd(k)}});
+  });
+}
+
 /* ===== تعديل الجدول ===== */
 let ed=null;
 const LIB=(()=>{const s=new Set();Object.values(PROGRAMS).forEach(p=>p.sessions.forEach(x=>x.ex.forEach(e=>s.add(e[0]))));Object.entries(ALTS).forEach(([k,v])=>{s.add(k);v.forEach(x=>s.add(x))});return [...s].sort((a,b)=>a.localeCompare(b))})();
@@ -597,7 +647,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.1 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.2 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
@@ -628,7 +678,7 @@ function render(){
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
 document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today()}render()}});
 $("#gearB").addEventListener("click",()=>{tab="settings";ed=null;resetArmed=cycleArmed=false;render()});
-$("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup")submitSetup()});
+$("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup")submitSetup();if(e.target.id==="sayF")openSay($("#sayIn").value)});
 $("#view").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   const d=b.dataset;
@@ -662,6 +712,7 @@ $("#view").addEventListener("click",e=>{
     case "prevD":foodDay=key(addDays(parseKey(foodDay),-1));return render();
     case "nextD":if(foodDay!==today()){foodDay=key(addDays(parseKey(foodDay),1));render()}return;
     case "quick":return openQuick();
+    case "sayMic":return listen(b);
     case "copyY":{const src=S.days[key(addDays(parseKey(foodDay),-1))];if(src&&src.food.length){day(foodDay).food.push(...src.food.map(x=>({...x})));save();render();toast("انضاف أكل اليوم السابق")}else toast("ما فيه أكل مسجل في اليوم السابق");return}
     case "finish":return finish();
     case "saveCk":{const v=+$("#ck").value;if(!$("#ck").value){S.profile.customKcal=null;save();render();return toast("رجعنا للحساب التلقائي")}if(v>=1200&&v<=6000){S.profile.customKcal=v;S.adj=0;save();render();toast("انحفظت سعراتك")}else toast("اكتب رقم بين 1200 و 6000");return}
