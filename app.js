@@ -63,7 +63,7 @@ function normalize(){
   S.days=S.days||{};S.recent=S.recent||[];S.custom=S.custom||[];S.meals=S.meals||[];S.history=S.history||[];
   S.sessionIdx=S.sessionIdx||0;S.swaps=S.swaps||{};S.edits=S.edits||{};S.adj=S.adj||0;
   S.prog=(PROGRAMS[S.prog]||(S.prog==="mine"&&S.mine))?S.prog:DEFP;
-  if(CFG.seed&&!S.seeded){S.history=CFG.seed.concat(S.history);S.seeded=true}
+  if(CFG.seed&&S.seeded!==(CFG.seedVer||true)){S.history=S.history.filter(h=>!(h.seed||(CFG.seedBefore&&h.prog===DEFP&&h.date<CFG.seedBefore)));S.history=CFG.seed.map(h=>({...h,seed:true})).concat(S.history);S.seeded=CFG.seedVer||true;if(CFG.progStart&&S.prog===DEFP&&S.profile)S.progStart=CFG.progStart}
 }
 normalize();
 function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}}
@@ -202,7 +202,7 @@ function submitSetup(){
   if(!(w>=35&&w<=250))return toast("اكتب وزنك بالكيلو");
   if(tw!==null&&!(tw>=35&&tw<=250))return toast("الوزن المستهدف غير منطقي");
   const first=!S.profile,old=S.profile||{};
-  if(S.prog!==ob.prog||first){S.prog=ob.prog;S.sessionIdx=0;S.progStart=today()}
+  if(S.prog!==ob.prog||first){S.prog=ob.prog;S.sessionIdx=0;S.progStart=(CFG.progStart&&ob.prog===DEFP)?CFG.progStart:today()}
   S.profile={name:ob.name,sex:ob.sex,age,h,w,tw,act:+ob.act,goal:+ob.goal,start:old.start||today(),startW:old.startW||w,customKcal:old.customKcal||null};
   if(first){day(today()).weight=w;S.adj=0}
   if(old.goal!==undefined&&old.goal!==+ob.goal)S.adj=0;
