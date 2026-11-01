@@ -27,7 +27,7 @@ const TIPS=[
 "العضلة تكبر وقت الراحة. يوم الراحة جزء من البرنامج.",
 "التزامك 80% لمدة سنة أحسن من 100% لمدة أسبوعين.",
 "صوّر نفسك كل أسبوعين بنفس الإضاءة. الصورة تبين اللي الميزان ما يبينه.",
-"آخر جولة في تمارين العزل كمّلها للفشل. الباقي وقّف قبل الفشل بعدة أو عدتين.",
+"آخر مجموعة في تمارين العزل كمّلها للفشل. الباقي وقّف قبل الفشل بعدة أو عدتين.",
 "مشيك اليومي يحرق أكثر من ما تتوقع. حاول توصل 7 آلاف خطوة."
 ];
 const yt=n=>"https://www.youtube.com/results?search_query="+encodeURIComponent("Jeff Nippard "+n+" form");
@@ -59,7 +59,8 @@ try{S=JSON.parse(localStorage.getItem(STORE)||"null")}catch(e){S=null}
 if(!S||typeof S!=="object")S={};
 function normalize(){
   S.days=S.days||{};S.recent=S.recent||[];S.custom=S.custom||[];S.meals=S.meals||[];S.history=S.history||[];
-  S.sessionIdx=S.sessionIdx||0;S.prog=PROGRAMS[S.prog]?S.prog:"fb4";S.swaps=S.swaps||{};S.adj=S.adj||0;
+  S.sessionIdx=S.sessionIdx||0;S.swaps=S.swaps||{};S.edits=S.edits||{};S.adj=S.adj||0;
+  S.prog=(PROGRAMS[S.prog]||(S.prog==="mine"&&S.mine))?S.prog:"fb4";
 }
 normalize();
 function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}}
@@ -136,8 +137,16 @@ function weeklyReview(){
 }
 
 /* ===== البرنامج ===== */
-const prog=()=>PROGRAMS[S.prog];
+const getProg=k=>{
+  if(k==="mine")return S.mine?{name:"Custom",ar:S.mine.name||"جدولي",days:S.mine.sessions.length,weeks:S.mine.weeks||8,sessions:S.mine.sessions,mine:true}:null;
+  const b=PROGRAMS[k];if(!b)return null;const ed=S.edits[k];
+  return ed?{...b,sessions:ed,days:ed.length,edited:true}:b;
+};
+const prog=()=>getProg(S.prog);
+const progList=()=>[...PORDER,...(S.mine?["mine"]:[])];
+const progOpt=(k,attrs)=>{const p=getProg(k);return `<button type="button" class="prog-opt" ${attrs} aria-pressed="${(ob&&tab==="setup"?ob.prog:S.prog)===k}"><span>${esc(p.ar)}<small>${dL(p.days)} بالأسبوع · ${wkL(p.weeks)}${p.edited?" · معدّل":""}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${esc(p.name)}</span></button>`};
 const wkL=n=>n+(n>=3&&n<=10?" أسابيع":" أسبوع");
+const dL=n=>n==1?"يوم واحد":n==2?"يومين":n+(n<=10?" أيام":" يوم");
 const sName=n=>n.length<=1?"اليوم "+n:n;
 const sessIdx=()=>S.sessionIdx%prog().sessions.length;
 const exName=(si,i)=>{const sw=S.swaps[S.prog]||{};return sw[si+"|"+i]||prog().sessions[si].ex[i][0]};
@@ -173,7 +182,7 @@ function vSetup(){
     </div>
     <div class="card"><div class="flabel">هدفك</div><div class="seg" style="grid-template-columns:repeat(3,1fr);margin-top:8px">${GOALS.map((g,i)=>`<button type="button" data-ob="goal" data-v="${i}" aria-pressed="${ob.goal==i}">${g[0]}<small>${g[1]}</small></button>`).join("")}</div></div>
     <div class="card"><div class="flabel">نشاطك</div><div class="seg" style="grid-template-columns:repeat(2,1fr);margin-top:8px">${ACT.map((a,i)=>`<button type="button" data-ob="act" data-v="${i}" aria-pressed="${ob.act==i}">${a[0]}<small>${a[1]}</small></button>`).join("")}</div></div>
-    <div class="card"><div class="flabel">برنامج التمرين</div><div class="seg" style="grid-template-columns:1fr;margin-top:8px">${PORDER.map(k=>{const p=PROGRAMS[k];return `<button type="button" class="prog-opt" data-ob="prog" data-v="${k}" aria-pressed="${ob.prog===k}"><span>${p.ar}<small>${p.days} أيام بالأسبوع · ${wkL(p.weeks)}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${p.name}</span></button>`}).join("")}</div></div>
+    <div class="card"><div class="flabel">برنامج التمرين</div><div class="seg" style="grid-template-columns:1fr;margin-top:8px">${progList().map(k=>progOpt(k,`data-ob="prog" data-v="${k}"`)).join("")}</div></div>
     <p class="note">FORMA للأصحاء فوق 18 سنة. إذا عندك مرض مزمن، أو حامل، أو ترضعين، راجع طبيبك قبل تبدأ.</p>
     <button type="submit" class="primary wide">${edit?"احفظ":"جهّز خطتي"}</button>
     ${edit?`<button type="button" class="ghost" data-go="settings">إلغاء</button>`:""}
@@ -248,8 +257,8 @@ function vToday(){
     <div class="list">${sg.list.length?sg.list.map((c,i)=>`<button class="item" data-sugadd="${i}"><span class="n">${esc(c.label)}<small>${esc(c.sub)}</small></span><span class="m">${fmt(c.k)} · ${fmt(c.p)}ب</span><span class="plus" aria-hidden="true">+</span></button>`).join(""):`<div class="empty">ما فيه خيار يركب على الباقي. جرّب قسم ثاني.</div>`}</div>
   </div>
   <div class="card stack">
-    <div class="row"><span class="lbl">تمرينك الجاي</span><span class="pill">${P.ar}</span></div>
-    <div class="row"><div class="num" style="font-size:24px;font-weight:800" dir="auto">${sName(nx.n)}</div><span class="sub">${nx.day?"يومه المقترح "+nx.day+" · ":""}${nx.ex.length} تمارين</span></div>
+    <div class="row"><span class="lbl">تمرينك الجاي</span><span class="pill">${esc(P.ar)}</span></div>
+    <div class="row"><div class="num" style="font-size:24px;font-weight:800" dir="auto">${esc(sName(nx.n))}</div><span class="sub">${nx.day?"يومه المقترح "+nx.day+" · ":""}${nx.ex.length} تمارين</span></div>
     <div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div>
     <div class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()} · يمشي بالترتيب، لو ريّحت يوم يبقى ينتظرك</div>
     ${S.days[T]?.trained?`<span class="pill" style="align-self:flex-start">تمرّنت اليوم</span>`:`<button class="ink" data-go="train">ابدأ التمرين</button>`}
@@ -396,22 +405,24 @@ function vTrain(){
   const P=prog(),si=sessIdx(),s=P.sessions[si];
   if(!live||live.k!==S.prog+si)live={k:S.prog+si,v:{}};
   return `
-  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${P.days} أيام بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${sName(s.n)}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
-  <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${sName(x.n)}</button>`).join("")}</div>
+  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
+  ${P.note?`<p class="note">${esc(P.note)}</p>`:""}
+  <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
+  <button class="ed-add" id="openEdit">عدّل الجدول</button>
   <details class="card flat"><summary>طريقة التمرين في FORMA ‹</summary><ul class="guide" style="margin-top:8px">
-    <li>اكتب الوزن والعدات لكل جولة. الخانة الفاضية تاخذ رقم المرة الماضية، فإذا كررته اضغط ✓ بس.</li>
-    <li>وقّف قبل الفشل بعدة أو عدتين. آخر جولة في تمارين العزل كمّلها للفشل.</li>
-    <li>إذا وصلت أعلى العدات في كل الجولات، يطلع لك "زد الوزن" المرة الجاية.</li>
-    <li>الجهاز مشغول؟ اضغط "بدّل" واختر بديل.</li></ul></details>
+    <li>اكتب الوزن والعدات لكل مجموعة. الخانة الفاضية تاخذ رقم المرة الماضية، فإذا كررته اضغط ✓ بس.</li>
+    <li>وقّف قبل الفشل بعدة أو عدتين. آخر مجموعة في تمارين العزل كمّلها للفشل.</li>
+    <li>إذا وصلت أعلى العدات في كل المجموعات، يطلع لك "زد الوزن" المرة الجاية.</li>
+    <li>الجهاز مشغول؟ اضغط "بدّل" واختر بديل.</li><li>تبي تغيّر التمارين أو المجموعات أو العدات؟ اضغط "عدّل الجدول".</li></ul></details>
   <div class="card">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
     const up=last&&last.length>=sets&&last.slice(0,sets).every(x=>x[1]>=top);
     return `<div class="ex"><div class="ex-h"><div style="min-width:0"><a href="${yt(n)}" target="_blank" rel="noopener">${esc(n)} ↗</a>
-      <div class="meta"><span class="pill mute num">${sets} × ${reps}</span>${up?`<span class="pill">زد الوزن</span>`:""}${n!==e[0]?`<span class="pill mute">بديل</span>`:""}</div></div>
+      <div class="meta"><span class="pill mute num">${sets} مجموعات</span><span class="pill mute num">${reps} عدات</span>${up?`<span class="pill">زد الوزن</span>`:""}${n!==e[0]?`<span class="pill mute">بديل</span>`:""}</div></div>
       ${ALTS[e[0]]||n!==e[0]?`<button class="swap" data-swap="${i}">بدّل</button>`:""}</div>
     <div class="last num">${last?`آخر مرة: ${last.map(x=>x[0]+"×"+x[1]).join("  ·  ")}${best?`  ·  أفضل ${best}`:""}`:"أول مرة: ابدأ بوزن مريح، وآخر عدتين تكون صعبة"}</div>
     <div class="sets"><span class="h">#</span><span class="h">كغ</span><span class="h">عدات</span><span class="h">تم</span>
     ${Array.from({length:sets},(_,j)=>{const v=live.v[n+"|"+j]||{},ph=last&&last[j]?last[j]:["",""],isPr=best&&+v.kg>best;
-      return `<span class="h num">${j+1}</span><input type="number" inputmode="decimal" class="${isPr?"pr":""}" aria-label="${esc(n)} جولة ${j+1} وزن" data-k="${esc(n)}|${j}|kg" data-best="${best}" placeholder="${ph[0]}" value="${v.kg??""}"><input type="number" inputmode="numeric" aria-label="${esc(n)} جولة ${j+1} عدات" data-k="${esc(n)}|${j}|r" placeholder="${ph[1]||String(reps).split("-")[0]}" value="${v.r??""}"><button class="done" data-done="${esc(n)}|${j}" aria-pressed="${!!v.d}" aria-label="تمت الجولة">✓</button>`}).join("")}</div></div>`}).join("")}
+      return `<span class="h num">${j+1}</span><input type="number" inputmode="decimal" class="${isPr?"pr":""}" aria-label="${esc(n)} مجموعة ${j+1} وزن" data-k="${esc(n)}|${j}|kg" data-best="${best}" placeholder="${ph[0]}" value="${v.kg??""}"><input type="number" inputmode="numeric" aria-label="${esc(n)} مجموعة ${j+1} عدات" data-k="${esc(n)}|${j}|r" placeholder="${ph[1]||String(reps).split("-")[0]}" value="${v.r??""}"><button class="done" data-done="${esc(n)}|${j}" aria-pressed="${!!v.d}" aria-label="تمت المجموعة">✓</button>`}).join("")}</div></div>`}).join("")}
   </div>
   <button class="primary" id="finish">خلصت التمرين</button>`;
 }
@@ -437,11 +448,91 @@ function finish(){
       const kg=+(v.kg||(use&&ph?ph[0]:0)),r=+(v.r||(use&&ph?ph[1]:0));
       if(kg>0||r>0)arr.push([kg,r])}
     if(arr.length){sets[n]=arr;const top=Math.max(...arr.map(x=>x[0]));if(best&&top>best)prs.push(n)}});
-  if(!Object.keys(sets).length)return toast("سجّل جولة وحدة على الأقل");
+  if(!Object.keys(sets).length)return toast("سجّل مجموعة وحدة على الأقل");
   const T=today();
   S.history.push({date:T,prog:S.prog,s:si,sets});day(T).trained=true;
   S.sessionIdx=(si+1)%P.sessions.length;live=null;restAt=null;save();tab="today";render();
   toast(prs.length?`رقم جديد في ${prs[0]}. الجاي ${sName(P.sessions[S.sessionIdx].n)}`:`انحفظ تمرينك. الجاي ${sName(P.sessions[S.sessionIdx].n)}`);
+}
+
+/* ===== تعديل الجدول ===== */
+let ed=null;
+const LIB=(()=>{const s=new Set();Object.values(PROGRAMS).forEach(p=>p.sessions.forEach(x=>x.ex.forEach(e=>s.add(e[0]))));Object.entries(ALTS).forEach(([k,v])=>{s.add(k);v.forEach(x=>s.add(x))});return [...s].sort((a,b)=>a.localeCompare(b))})();
+function openEditor(k){
+  let sessions,name="",weeks=8;
+  if(k==="mine"&&!S.mine){sessions=[{n:"اليوم 1",ex:[]}];name="جدولي"}
+  else{const p=getProg(k);weeks=p.weeks;name=p.ar;sessions=p.sessions}
+  if(k===S.prog)sessions=sessions.map((s,si)=>({...s,ex:s.ex.map((e,i)=>[exName(si,i),e[1],e[2]])}));
+  ed={k,name,weeks,sessions:JSON.parse(JSON.stringify(sessions))};
+  tab="edit";render();
+}
+function vEdit(){
+  if(!ed)openEditor(S.prog);
+  const mine=ed.k==="mine",base=mine?null:PROGRAMS[ed.k];
+  return `<div><h1>${mine?"جدولك الخاص":"عدّل الجدول"}</h1><div class="sub">${mine?"حط التمارين اللي تبيها، بالترتيب اللي يناسبك.":esc(base.ar)+". غيّر التمارين والمجموعات والعدات على كيفك."}</div></div>
+  ${mine?`<div class="card grid2"><div class="field"><label for="edPn">اسم الجدول</label><input type="text" id="edPn" data-ed="pn" value="${esc(ed.name)}"></div><div class="field"><label for="edWk">كم أسبوع</label><input type="number" inputmode="numeric" id="edWk" data-ed="wk" value="${esc(ed.weeks)}"></div></div>`:""}
+  ${ed.sessions.map((s,si)=>`<div class="card stack ed-day">
+    <div class="row"><input type="text" class="ed-sn" data-ed="sn|${si}" aria-label="اسم اليوم" value="${esc(s.n)}" dir="auto">${ed.sessions.length>1?`<button class="swap" data-edx="delS|${si}">احذف اليوم</button>`:""}</div>
+    ${s.ex.length?s.ex.map((e,i)=>`<div class="ed-ex">
+      <div class="ed-top"><button class="ed-name num" data-edx="rep|${si}|${i}" dir="ltr">${esc(e[0])}</button>
+        <div class="ed-move"><button data-edx="up|${si}|${i}" aria-label="فوق" ${i?"":"disabled"}>↑</button><button data-edx="dn|${si}|${i}" aria-label="تحت" ${i<s.ex.length-1?"":"disabled"}>↓</button><button data-edx="rm|${si}|${i}" aria-label="احذف التمرين" class="ed-rm">×</button></div></div>
+      <div class="ed-ctl"><span class="flabel">مجموعات</span><div class="ed-step"><button data-edx="sm|${si}|${i}" aria-label="أنقص مجموعة">−</button><b class="num">${e[1]}</b><button data-edx="sp|${si}|${i}" aria-label="زد مجموعة">+</button></div>
+        <span class="flabel">عدات</span><input type="text" inputmode="text" class="ed-reps num" data-ed="r|${si}|${i}" aria-label="العدات" value="${esc(e[2])}" placeholder="8-12" dir="ltr"></div>
+    </div>`).join(""):`<div class="empty">ما فيه تمارين. أضف أول تمرين.</div>`}
+    <button class="ed-add" data-edx="add|${si}">+ أضف تمرين</button>
+  </div>`).join("")}
+  ${ed.sessions.length<7?`<button data-edx="addS">+ أضف يوم</button>`:""}
+  <button class="primary wide" id="edSave">احفظ الجدول</button>
+  ${!mine&&S.edits[ed.k]?`<button class="ghost" id="edReset">رجّع جدول FORMA الأصلي</button>`:""}
+  ${mine&&S.mine?`<button class="ghost" id="edReset">احذف جدولي الخاص</button>`:""}
+  <button class="ghost" data-go="${mine?"settings":"train"}">إلغاء</button>`;
+}
+function keepScroll(){const y=window.scrollY;render();window.scrollTo(0,y)}
+function edAction(x){
+  const [a,si,i]=x.split("|"),s=ed.sessions[+si];
+  if(a==="sm"){s.ex[+i][1]=Math.max(1,s.ex[+i][1]-1)}
+  else if(a==="sp"){s.ex[+i][1]=Math.min(10,s.ex[+i][1]+1)}
+  else if(a==="up"&&+i>0){const t=s.ex[+i];s.ex[+i]=s.ex[+i-1];s.ex[+i-1]=t}
+  else if(a==="dn"&&+i<s.ex.length-1){const t=s.ex[+i];s.ex[+i]=s.ex[+i+1];s.ex[+i+1]=t}
+  else if(a==="rm"){s.ex.splice(+i,1)}
+  else if(a==="delS"){ed.sessions.splice(+si,1)}
+  else if(a==="addS"){ed.sessions.push({n:"اليوم "+(ed.sessions.length+1),ex:[]});keepScroll();return window.scrollTo(0,document.body.scrollHeight)}
+  else if(a==="add")return pickEx(n=>{s.ex.push([n,3,"8-12"]);keepScroll()});
+  else if(a==="rep")return pickEx(n=>{s.ex[+i][0]=n;keepScroll()},s.ex[+i][0]);
+  keepScroll();
+}
+function pickEx(cb,cur){
+  sheet((sh,close)=>{
+    sh.setAttribute("aria-label","اختر تمرين");
+    sh.innerHTML=`<div class="grab"></div><h2>${cur?"بدّل التمرين":"أضف تمرين"}</h2><p class="note" style="margin:2px 0 10px">ابحث بالإنجليزي، أو اكتب اسم أي تمرين تبيه.</p>
+      <input type="search" id="exQ" placeholder="مثال: Row أو Curl" dir="auto" autocomplete="off"><div class="list" id="exL" style="max-height:48vh;overflow:auto;margin-top:8px"></div>`;
+    const q=sh.querySelector("#exQ"),L=sh.querySelector("#exL");
+    const draw=()=>{const t=q.value.trim(),tl=t.toLowerCase(),m=LIB.filter(n=>!tl||n.toLowerCase().includes(tl)).slice(0,60);
+      const exact=LIB.some(n=>n.toLowerCase()===tl);
+      L.innerHTML=(t&&!exact?`<button class="item" data-pick="${esc(t)}"><span class="n">أضف "${esc(t)}"<small>تمرين جديد باسمك</small></span><span class="plus" aria-hidden="true">+</span></button>`:"")+
+        m.map(n=>`<button class="item" data-pick="${esc(n)}"><span class="n num" dir="ltr" style="text-align:right">${esc(n)}</span>${n===cur?'<span class="pill mute">الحالي</span>':'<span class="plus" aria-hidden="true">+</span>'}</button>`).join("")||`<div class="empty">اكتب اسم التمرين وأضفه.</div>`};
+    q.addEventListener("input",draw);draw();
+    L.addEventListener("click",e=>{const b=e.target.closest("[data-pick]");if(!b)return;close();cb(b.dataset.pick)});
+  });
+}
+function edSave(){
+  const ss=ed.sessions.filter(s=>s.ex.length);
+  if(!ss.length)return toast("أضف تمرين واحد على الأقل");
+  if(ss.length<ed.sessions.length)return toast("فيه يوم بدون تمارين. أضف له تمرين أو احذفه");
+  ss.forEach((s,i)=>{s.n=String(s.n||"").trim()||("اليوم "+(i+1));s.ex.forEach(e=>{e[2]=String(e[2]||"").replace(/\s/g,"")||"8-12"})});
+  if(ed.k==="mine"){
+    const wk=clamp(Math.round(+ed.weeks||8),1,52);
+    const first=!S.mine;S.mine={name:String(ed.name||"").trim()||"جدولي",weeks:wk,sessions:ss};
+    if(first||S.prog!=="mine"){S.prog="mine";S.sessionIdx=0;S.progStart=today()}
+  }else S.edits[ed.k]=ss;
+  delete S.swaps[ed.k];
+  if(S.prog===ed.k)S.sessionIdx=Math.min(S.sessionIdx,ss.length-1);
+  live=null;ed=null;save();tab="train";render();toast("انحفظ جدولك");
+}
+function edReset(){
+  if(ed.k==="mine"){S.mine=null;if(S.prog==="mine"){S.prog="fb4";S.sessionIdx=0;S.progStart=today()}ed=null;save();tab="settings";render();return toast("انحذف جدولك الخاص")}
+  delete S.edits[ed.k];delete S.swaps[ed.k];if(S.prog===ed.k)S.sessionIdx=Math.min(S.sessionIdx,PROGRAMS[ed.k].sessions.length-1);
+  live=null;ed=null;save();tab="train";render();toast("رجع الجدول الأصلي");
 }
 
 /* ===== تقدمي ===== */
@@ -497,7 +588,8 @@ function vSettings(){
       <li>الدهون 25% من سعراتك، والباقي كارب.</li>
       <li>كل أسبوع يراجع FORMA متوسط وزنك، ويقترح تعديل إذا نزولك أو زيادتك طلعت عن المطلوب.</li></ul></details>
   </div>
-  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${PORDER.map(k=>{const pp=PROGRAMS[k];return `<button class="prog-opt" data-prog="${k}" aria-pressed="${S.prog===k}"><span>${pp.ar}<small>${pp.days} أيام بالأسبوع · ${wkL(pp.weeks)}</small></span><span class="num" style="font-size:12px;opacity:.7" dir="ltr">${pp.name}</span></button>`}).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p></div>
+  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${progList().map(k=>progOpt(k,`data-prog="${k}"`)).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p>
+    <div class="grid2"><button id="openEdit">عدّل جدولي الحالي</button><button id="newMine">${S.mine?"عدّل جدولي الخاص":"سو جدولك من الصفر"}</button></div></div>
   <div class="card stack"><h2>بياناتي</h2><button data-go="setup">عدّل الطول والوزن والهدف</button>
     <div class="grid2"><button id="exportB">نسخة احتياطية</button><button id="importB">استرجاع نسخة</button></div><input type="file" id="importF" accept="application/json,.json" hidden>
     <p class="note">بياناتك محفوظة على جهازك بس. خذ نسخة احتياطية قبل ما تغيّر جوالك.</p>
@@ -505,7 +597,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.0 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.1 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
@@ -526,7 +618,7 @@ function render(){
   $("nav").hidden=setup;$("#hdr").hidden=setup&&!S.profile;
   document.querySelectorAll("nav button").forEach(b=>{if(b.dataset.tab===tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   $("#streakN").textContent=S.profile?streak():0;
-  const views={setup:vSetup,today:vToday,food:vFood,train:vTrain,progress:vProgress,settings:vSettings};
+  const views={setup:vSetup,today:vToday,food:vFood,train:vTrain,progress:vProgress,settings:vSettings,edit:vEdit};
   $("#view").innerHTML=(views[tab]||vToday)();
   if(tab==="today"){const sg=suggestions(sugFilter);lastSug=sg.list}
   if(tab==="food")renderResults();
@@ -534,14 +626,14 @@ function render(){
   window.scrollTo(0,0);
 }
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
-document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today()}render()}});
-$("#gearB").addEventListener("click",()=>{tab="settings";resetArmed=cycleArmed=false;render()});
+document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today()}render()}});
+$("#gearB").addEventListener("click",()=>{tab="settings";ed=null;resetArmed=cycleArmed=false;render()});
 $("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup")submitSetup()});
 $("#view").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   const d=b.dataset;
   if(d.ob){readSetupFields();ob[d.ob]=d.v;render();return}
-  if(d.go){tab=d.go;if(tab!=="setup")ob=null;if(tab==="food")foodDay=today();render();return}
+  if(d.go){tab=d.go;if(tab!=="setup")ob=null;if(tab!=="edit")ed=null;if(tab==="food")foodDay=today();render();return}
   if(d.add!==undefined)return openFood(d.add);
   if(d.cat){cat=d.cat;restPick="";q="";const qi=$("#q");if(qi)qi.value="";document.querySelectorAll(".chip[data-cat]").forEach(c=>c.setAttribute("aria-pressed",c.dataset.cat===cat));return renderResults()}
   if(d.rest!==undefined){restPick=d.rest;return renderResults()}
@@ -555,7 +647,12 @@ $("#view").addEventListener("click",e=>{
   if(d.done){const v=live.v[d.done]=live.v[d.done]||{};v.d=!v.d;b.setAttribute("aria-pressed",v.d);if(v.d)startRest();return}
   if(d.sug){sugFilter=d.sug;return render()}
   if(d.sugadd!==undefined)return addSug(+d.sugadd);
+  if(d.edx)return edAction(d.edx);
   switch(b.id){
+    case "openEdit":return openEditor(S.prog);
+    case "newMine":return openEditor("mine");
+    case "edSave":return edSave();
+    case "edReset":return edReset();
     case "openSug":return openSug();
     case "openPlan":return openPlan();
     case "doInstall":if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.finally(()=>{deferredPrompt=null;render()})}return;
@@ -578,6 +675,8 @@ $("#view").addEventListener("click",e=>{
 $("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0])});
 $("#view").addEventListener("input",e=>{
   if(e.target.id==="q"){q=e.target.value;return renderResults()}
+  if(e.target.dataset.ed&&ed){const [f,si,i]=e.target.dataset.ed.split("|");const v=e.target.value;
+    if(f==="sn")ed.sessions[+si].n=v;else if(f==="r")ed.sessions[+si].ex[+i][2]=v;else if(f==="pn")ed.name=v;else if(f==="wk")ed.weeks=v;return}
   const k=e.target.dataset.k;
   if(k){const parts=k.split("|"),f=parts.pop(),j=parts.pop(),n=parts.join("|");const v=live.v[n+"|"+j]=live.v[n+"|"+j]||{};v[f]=e.target.value;
     if(f==="kg"){const best=+e.target.dataset.best;e.target.classList.toggle("pr",best>0&&+e.target.value>best)}}
