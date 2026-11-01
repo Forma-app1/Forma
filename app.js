@@ -18,11 +18,11 @@ const TIPS=[
 "البروتين أول شي في صحنك. إذا قفلته، أغلب شغل اليوم خلص.",
 "فوّت تمرين؟ عادي. الجلسة الجاية تنتظرك بنفس مكانها.",
 "زد كيلو أو عدة وحدة عن آخر مرة. هذا التقدم كله.",
-"الميزان يتغير يوميا بسبب الماي والملح. صدّق متوسط الأسبوع.",
+"الميزان يتغير يوميا بسبب الماء والملح. صدّق متوسط الأسبوع.",
 "نومك 7 ساعات يرفع أداءك في الجيم أكثر من أي مكمّل.",
 "عندك عزيمة الليلة؟ سجّلها من الحين ورتّب باقي يومك عليها.",
 "اللي يوصل مو الأقوى، اللي ما يقطع. حافظ على أيامك.",
-"كوب ماي قبل كل وجبة. سهلة وتفرق.",
+"كوب ماء قبل كل وجبة. سهلة وتفرق.",
 "أكلت زيادة أمس؟ لا تجوّع نفسك اليوم. ارجع لخطتك من الوجبة الجاية.",
 "العضلة تكبر وقت الراحة. يوم الراحة جزء من البرنامج.",
 "التزامك 80% لمدة سنة أحسن من 100% لمدة أسبوعين.",
@@ -269,7 +269,7 @@ function vToday(){
   </div>
   <div class="card stack"><div class="row"><h2>وزن اليوم</h2><span class="sub">${trend()?`متوسط الأسبوع ${r1(trend().avg)} كغ`:""}</span></div>
     <div class="row"><input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${S.days[T]?.weight??""}"><button class="primary" id="wSave">حفظ</button></div>
-    <p class="note">وزّن نفسك الصبح بعد الحمام وقبل الأكل. FORMA يعتمد على متوسط الأسبوع.</p></div>
+    <p class="note">اوزن نفسك الصبح بعد الحمام وقبل الأكل. FORMA يعتمد على متوسط الأسبوع.</p></div>
   <div class="card flat tip"><span class="q">”</span><p id="tipText">${esc(TIPS[(tipBase()+tipShift)%TIPS.length])}</p></div>`;
 }
 const tipBase=()=>{const d=new Date();return (d.getDate()+d.getMonth()*31)%TIPS.length};
@@ -285,7 +285,7 @@ function vFood(){
   return `
   <div class="daybar"><button id="prevD" aria-label="اليوم السابق">→</button><div class="center" style="min-width:0"><div class="d">${label}</div><div class="sub num">${fmt(t.k)} / ${fmt(g.kcal)} سعرة · ${fmt(t.p)} / ${g.p} بروتين</div></div><button id="nextD" aria-label="اليوم التالي" ${foodDay===today()?"disabled":""}>←</button></div>
   <div class="progress"><i style="width:${clamp(t.k/g.kcal*100,0,100)}%"></i></div>
-  <form class="card stack say" id="sayF" autocomplete="off"><div class="row"><h2>قول وش أكلت</h2><span class="pill">جديد</span></div>
+  <form class="card stack say" id="sayF" autocomplete="off"><div class="row"><h2>قل وش أكلت اليوم؟</h2><span class="pill">جديد</span></div>
     <div class="say-in"><input type="text" id="sayIn" enterkeyhint="done" placeholder="مثال: ٣ بيض وخبزة وكوب لبن" dir="auto" aria-label="اكتب وش أكلت">${SR?`<button type="button" id="sayMic" class="mic" aria-label="تكلم">${ICON.mic}</button>`:""}<button type="submit" class="primary">تم</button></div>
     <p class="note">${SR?"اكتب أو اضغط المايك وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام.":"اكتب، أو اضغط مايك الكيبورد وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام."}</p></form>
   <div class="row"><input type="search" id="q" placeholder="ابحث: كبسة، بيض، البيك…" value="${esc(q)}" autocomplete="off" aria-label="ابحث عن أكلة"><button id="quick" style="white-space:nowrap">+ سريعة</button></div>
@@ -464,7 +464,7 @@ function finish(){
   toast(prs.length?`رقم جديد في ${prs[0]}. الجاي ${sName(P.sessions[S.sessionIdx].n)}`:`انحفظ تمرينك. الجاي ${sName(P.sessions[S.sessionIdx].n)}`);
 }
 
-/* ===== قول وش أكلت ===== */
+/* ===== قل وش أكلت ===== */
 const SRC=window.SpeechRecognition||window.webkitSpeechRecognition,SR=!!SRC;
 let rec=null;
 function listen(btn){
