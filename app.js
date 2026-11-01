@@ -10,7 +10,7 @@ Object.keys(RAW).forEach(cat=>RAW[cat].forEach(r=>{
   FOODS.push({fid:"b"+FOODS.length,n:r[0],cat,u:r[1],k:r[2],p:r[3],c:r[4],f:r[5],store});
 }));
 const CATS=Object.keys(RAW);
-const PROGRAMS=window.FORMA_PROGRAMS||{},PORDER=window.FORMA_PROGRAM_ORDER||Object.keys(PROGRAMS),ALTS=window.FORMA_ALTS||{},PLAN=window.FORMA_PLAN||{};
+const PROGRAMS=window.FORMA_PROGRAMS||{},DEFP=(window.FORMA_CONFIG&&window.FORMA_CONFIG.defaultProg&&(window.FORMA_PROGRAMS||{})[window.FORMA_CONFIG.defaultProg])?window.FORMA_CONFIG.defaultProg:"fb4",PORDER=window.FORMA_PROGRAM_ORDER||Object.keys(PROGRAMS),ALTS=window.FORMA_ALTS||{},PLAN=window.FORMA_PLAN||{};
 const MEALS=["فطور","غداء","عشاء","سناك"];
 const ACT=[["خامل","شغل مكتبي، بدون رياضة",1.2],["خفيف","تمرين 1-3 أيام",1.375],["متوسط","تمرين 3-5 أيام",1.55],["عالي","تمرين 6-7 أيام أو شغل بدني",1.725]];
 const GOALS=[["خسارة دهون","نزول 0.5-1% بالأسبوع"],["ثبات","تحافظ على وزنك"],["زيادة عضل","زيادة بطيئة ونظيفة"]];
@@ -54,14 +54,16 @@ gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/
 };
 
 /* ===== الحالة ===== */
-const STORE="forma-v2";
+const CFG=window.FORMA_CONFIG||{};
+const STORE=CFG.store||"forma-v2";
 let S=null;
 try{S=JSON.parse(localStorage.getItem(STORE)||"null")}catch(e){S=null}
 if(!S||typeof S!=="object")S={};
 function normalize(){
   S.days=S.days||{};S.recent=S.recent||[];S.custom=S.custom||[];S.meals=S.meals||[];S.history=S.history||[];
   S.sessionIdx=S.sessionIdx||0;S.swaps=S.swaps||{};S.edits=S.edits||{};S.adj=S.adj||0;
-  S.prog=(PROGRAMS[S.prog]||(S.prog==="mine"&&S.mine))?S.prog:"fb4";
+  S.prog=(PROGRAMS[S.prog]||(S.prog==="mine"&&S.mine))?S.prog:DEFP;
+  if(CFG.seed&&!S.seeded){S.history=CFG.seed.concat(S.history);S.seeded=true}
 }
 normalize();
 function save(){try{localStorage.setItem(STORE,JSON.stringify(S))}catch(e){toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}}
@@ -163,13 +165,14 @@ let deferredPrompt=null,tab="today";
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;if(tab==="today")render()});
 
 /* ===== الإعداد ===== */
+const welcomeLogo=()=>{const el=document.querySelector("#hdr .logo");return el?el.innerHTML.replace(/fh(bg|gr|or)/g,"fw$1"):"FORMA"};
 let ob=null;
 function vSetup(){
   const p=S.profile||{};
-  if(!ob)ob={name:p.name||"",sex:p.sex||"ذكر",age:p.age||"",h:p.h||"",w:p.w||"",tw:p.tw||"",act:p.act??2,goal:p.goal??0,prog:S.prog||"fb4"};
+  if(!ob)ob={name:p.name||"",sex:p.sex||"ذكر",age:p.age||"",h:p.h||"",w:p.w||"",tw:p.tw||"",act:p.act??2,goal:p.goal??0,prog:S.prog||DEFP};
   const edit=!!S.profile;
   return `
-  <div class="welcome">${edit?"":`<div class="logo">FORMA<i></i></div>`}<h1>${edit?"عدّل بياناتك":"نبدأ بخطتك"}</h1><div class="sub">${edit?"نعيد حساب سعراتك وبروتينك على البيانات الجديدة.":"دقيقة وحدة. نحسب لك السعرات والبروتين ونجهز برنامجك."}</div></div>
+  <div class="welcome">${edit?"":`<div class="logo" aria-label="FORMA">${welcomeLogo()}</div>`}<h1>${edit?"عدّل بياناتك":"نبدأ بخطتك"}</h1><div class="sub">${edit?"نعيد حساب سعراتك وبروتينك على البيانات الجديدة.":"دقيقة وحدة. نحسب لك السعرات والبروتين ونجهز برنامجك."}</div></div>
   <form id="setup" class="stack" novalidate>
     <div class="card stack">
       <div class="field"><label for="obName">اسمك</label><input type="text" id="obName" autocomplete="given-name" value="${esc(ob.name)}" placeholder="مثال: جواد"></div>
@@ -582,7 +585,7 @@ function edSave(){
   live=null;ed=null;save();tab="train";render();toast("انحفظ جدولك");
 }
 function edReset(){
-  if(ed.k==="mine"){S.mine=null;if(S.prog==="mine"){S.prog="fb4";S.sessionIdx=0;S.progStart=today()}ed=null;save();tab="settings";render();return toast("انحذف جدولك الخاص")}
+  if(ed.k==="mine"){S.mine=null;if(S.prog==="mine"){S.prog=DEFP;S.sessionIdx=0;S.progStart=today()}ed=null;save();tab="settings";render();return toast("انحذف جدولك الخاص")}
   delete S.edits[ed.k];delete S.swaps[ed.k];if(S.prog===ed.k)S.sessionIdx=Math.min(S.sessionIdx,PROGRAMS[ed.k].sessions.length-1);
   live=null;ed=null;save();tab="train";render();toast("رجع الجدول الأصلي");
 }
@@ -649,7 +652,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.3 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.4 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
