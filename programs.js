@@ -16,15 +16,10 @@ pplap:{name:"PPL + Anterior / Posterior",ar:"بوش بول ليقز + أمامي
  {n:"Pull A",day:"الأحد",ex:[["T-Bar Row",3,"8-12"],["Lat Pulldown",3,"8-12"],["Iliac Lat Pulldown",2,"8-12"],["Rear Delt Machine",3,"8-12"],["Behind-the-Back Cable Curl",2,"8-10"],["Shrug Machine",2,"8-12"]]},
  {n:"Legs",day:"الاثنين",ex:[["Leg Press",3,"6-10"],["Leg Extension",2,"8-12"],["Seated Leg Curl",3,"8-12"],["Adductor Machine",3,"8-12"],["Hip Thrust",3,"8-12"],["Calf Raise Machine",3,"8-12"],["Cable Crunch",3,"8-12"]]},
  {n:"Push B + Anterior",day:"الأربعاء",ex:[["Cable Lateral Raise",3,"8-12"],["Flat Chest Press Machine",2,"8-10"],["Chest Fly Machine",2,"8-10"],["Incline Chest Press",2,"8-10"],["Leg Extension",2,"8-12"],["Shoulder Press Machine",2,"8-12"],["Overhead Triceps Extension",3,"8-12"],["Cable Crunch",2,"8-12"]]},
- {n:"Pull B + Posterior",day:"الخميس",ex:[["T-Bar Row",3,"8-12"],["Lat Pulldown",3,"8-12"],["Seated Row Machine",2,"8-12"],["Seated Leg Curl",3,"8-12"],["Preacher Curl Machine",2,"8-12"],["Cable Reverse Curl",2,"8-12"],["Rear Delt Machine",3,"8-12"]]}]},
-fwz:{name:"Fawaz",ar:"برنامج فواز",days:5,weeks:8,note:"اليوم 4 واليوم 7 راحة",sessions:[
- {n:"1",ex:[["Wide Grip Row",3,"10"],["Iliac Lat Pulldown",3,"10"],["T-Bar Row (Lower Traps)",2,"10"],["Pec Deck",2,"8-10"],["Incline Machine Press",2,"8-10"],["DB Lateral Raise",4,"10"],["Rear Delt Cable Fly",3,"10"]]},
- {n:"2",ex:[["Leg Press",3,"10"],["Seated Hamstring Curl",2,"10"],["Leg Extension",3,"10"],["Romanian Deadlift",2,"10"],["Adductor Machine",3,"10"],["Behind-the-Back D-Handle Curl",2,"10"],["Rope Pushdown",2,"10"]]},
- {n:"3",ex:[["Pec Deck",2,"8-10"],["Flat Press",2,"8-10"],["Cable Upper Chest Fly",2,"10"],["Lat Row",2,"10"],["Lat Pulldown",2,"10"],["Machine Shoulder Press",2,"10"],["Lateral Raise Machine",2,"10"]]},
- {n:"5",ex:[["Wide Grip Row",2,"10"],["Lat Pulldown",2,"10"],["Iliac Lat Pulldown",2,"10"],["Rear Delt Fly",3,"10"],["Rope Pushdown",3,"10"],["Shrugs",2,"10"],["Seated Hamstring Curl",3,"10"]]},
- {n:"6",ex:[["Incline Machine Press",2,"8-10"],["Pec Deck",2,"8-10"],["Flat Press",2,"8-10"],["Lateral Raise Machine",3,"10"],["Cable Biceps Curl",3,"10"],["Preacher Dumbbell Curl",2,"10"],["Leg Extension",3,"10"]]}]}
+ {n:"Pull B + Posterior",day:"الخميس",ex:[["T-Bar Row",3,"8-12"],["Lat Pulldown",3,"8-12"],["Seated Row Machine",2,"8-12"],["Seated Leg Curl",3,"8-12"],["Preacher Curl Machine",2,"8-12"],["Cable Reverse Curl",2,"8-12"],["Rear Delt Machine",3,"8-12"]]}]}
+
 };
-window.FORMA_PROGRAM_ORDER=["fb4","ap4","pplap","fwz"];
+window.FORMA_PROGRAM_ORDER=["fb4","ap4","pplap"];
 
 // بدائل لو الجهاز مشغول أو مو موجود
 window.FORMA_ALTS = {
