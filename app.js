@@ -300,7 +300,9 @@ function renderResults(){
   const row=f=>`<button class="item" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${foodSub(f)}</small></span><span class="m">${f.p!=null?r1(f.p)+"ب":""}</span><span class="plus" aria-hidden="true">+</span></button>`;
   if(qq){
     const words=qq.split(/\s+/);
-    rows=all.filter(f=>words.every(w=>(f.n+" "+(f.store||"")+" "+f.cat).includes(w))).slice(0,60).map(row);
+    let found=window.FORMA_SAY?FORMA_SAY.search(qq,{foods:all,stores:[...RESTS,"الحطب","المراعي","ندى"],recent:S.recent}):[];
+    if(!found.length)found=all.filter(f=>words.every(w=>(f.n+" "+(f.store||"")+" "+f.cat).includes(w)));
+    rows=found.slice(0,60).map(row);
     if(!rows.length)head=`<div class="empty">ما لقينا "${esc(qq)}". جرّب كلمة ثانية، أو أضفها من "+ سريعة".</div>`;
   }else if(cat==="الكل"){
     const rec=S.recent.map(getFood).filter(Boolean);
@@ -647,7 +649,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.2 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.3 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
