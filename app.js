@@ -756,7 +756,7 @@ function openSay(text){
       if(b.dataset.sd!=null){its.splice(+b.dataset.sd,1);if(!its.length&&!res.miss.length)return close();return draw()}
       if(b.dataset.sq!=null){close();q=b.dataset.sq;cat="الكل";const qi=$("#q");if(qi)qi.value=q;renderResults();qi&&qi.focus();return}
       if(b.id==="sayAdd"){const k=targetDay();its.forEach(it=>{if(it.amt>0){day(k).food.push({fid:it.fid,amt:it.amt,meal});pushRecent(it.fid)}});
-        its.forEach(it=>{S.learned=S.learned||{};S.learned[it.key]=it.fid});close();afterAdd(k)}});
+        close();afterAdd(k)}});
   });
 }
 

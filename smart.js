@@ -118,7 +118,7 @@ function parse(text,ctx){
       if(segRaw.includes(" ")&&norm(f.n).replace(/[()\-]/g," ").startsWith(segRaw))s+=1;
       if(ctx.recent&&ctx.recent.includes(f.fid))s+=0.4;
       if(f.fid&&f.fid[0]==="c")s+=0.3;
-      if(ctx.learned&&ctx.learned[key]===f.fid)s+=6;
+      if(ctx.learned&&ctx.learned[key]===f.fid&&matched===Qn.length)s+=6;
       if(Qn.length===1&&DEF[Qn[0]]&&norm(f.n).startsWith(DEF[Qn[0]]))s+=1.2;
       scored.push([s,f]);
     });
