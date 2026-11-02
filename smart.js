@@ -20,7 +20,7 @@ const FILL=new Set(["اكلت","كلت","شربت","تسحرت","تناولت","
 const PIECE=[["بياض",33],["اومليت",60],["بيض",50],["خبز عربي",60],["صامولي",70],["تميس",130],["توست",30],["كرواسون",60],["تنور",90],["باقيت",120],["بيقل",100],["تورتيلا",45],["رقاق",30],["موز",120],["تمر",8],["رطب",12],["تفاح",180],["برتقال",150],["يوسفي",90],["مانجو",250],["رمان",250],["كيوي",75],["خوخ",150],["مشمش",35],["كمثري",180],["جوافه",100],["تين",50],["افوكادو",150],["فراوله",12],["زيتون",4],["صدر دجاج",170],["فخذ دجاج",130],["شوايه",550],["ستيك",220],["سالمون",150],["برجر",200],["ساندويتش فلافل",250],["فلافل",17],["سمبوسه",40],["فطيره",110],["مناقيش",120],["بيتزا",110],["دونات",60],["بان كيك",40],["وافل",75],["لقيمات",15],["كليجا",40],["معمول",40],["بقلاوه",30],["كوكيز",30],["براونيز",60],["كبه",60],["نقانق",40],["ناجتس",17],["اجنحه",35],["كباب",50],["كفته",50],["بطاطا حلوه",150],["بطاطس مسلوقه",170],["خيار",120],["طماطم",120],["جزر",70],["لوز",1.2],["كاجو",1.5],["جوز",5],["بندق",1.5]];
 const SERVE={"رز وأطباق شعبية":300,"خبز ونشويات":60,"لحوم ودجاج وسمك":150,"بيض وبقوليات":100,"ساندويتشات ومعجنات":150,"ألبان وبروتين":200,"فواكه":120,"خضار":100,"دهون ومكسرات وصوصات":15,"حلويات وسناكات":40,"مشروبات":240};
 
-const STORE={ماك:"ماكدونالدز",ماكدونالدز:"ماكدونالدز",مكدونالدز:"ماكدونالدز",بيك:"البيك",كنتاكي:"كنتاكي",kfc:"كنتاكي",هرفي:"هرفي",كنج:"برجر كنج",ستاربكس:"ستاربكس",starbucks:"ستاربكس",شاورمر:"شاورمر",فايف:"فايف قايز",حطب:"الحطب",مراعي:"المراعي",ندي:"ندى",شاورما:"شاورما",دانكن:"دانكن",دنكن:"دانكن",دانكين:"دانكن",dunkin:"دانكن"};
+const STORE={ماك:"ماكدونالدز",ماكدونالدز:"ماكدونالدز",مكدونالدز:"ماكدونالدز",بيك:"البيك",كنتاكي:"كنتاكي",kfc:"كنتاكي",هرفي:"هرفي",كنج:"برجر كنج",ستاربكس:"ستاربكس",starbucks:"ستاربكس",شاورمر:"شاورمر",فايف:"فايف قايز",حطب:"الحطب",مراعي:"المراعي",ندي:"ندى",شاورما:"شاورما",دانكن:"دانكن",دنكن:"دانكن",دانكين:"دانكن",dunkin:"دانكن",رايق:"رايق",رائق:"رايق",رايج:"رايق",raik:"رايق"};
 const STORE_SYN={"البيك":{دجاج:"بروست"},"كنتاكي":{دجاج:"قطع"}};
 const DEF={كيك:"كيك ساده",بطاطس:"بطاطس مقليه",زبادي:"زبادي عادي",سلط:"سلطه خضار",قهو:"قهوه عربيه",فول:"فول مدمس",حمص:"حمص مطبوخ",برجر:"برجر لحم",كريم:"كريمه طبخ",شوفان:"شوفان",ذر:"ذره مسلوقه",دون:"دونات",خبز:"خبز عربي",رز:"رز ابيض",بيض:"بيض مسلوق",حليب:"حليب كامل",دجاج:"صدر دجاج",لحم:"لحم غنم",تون:"تونه بالماء",جبن:"جبن",كندر:"كندر شوكولاته",جالكسي:"جالكسي ساده",شوكولات:"شوكولاته حليب"};
 let cache=null;
@@ -101,12 +101,14 @@ function parse(text,ctx){
     });
     if(!Q.length)return;
     const valid=new Set(ctx.stores||[]);let sname=null;
-    const Q1=Q.filter(x=>{const s=STORE[x];if(s&&valid.has(s)&&!sname){sname=s;return false}return true});
+    const sw=Q.filter(x=>STORE[x]&&valid.has(STORE[x])),pick=sw.find(x=>STORE[x]!=="شاورما")||sw[0];if(pick)sname=STORE[pick];
+    const Q1=pick&&STORE[pick]!=="شاورما"?Q.filter(x=>x!==pick):Q;
     if(sname)ctxStore=sname;
     const store=sname?[sname]:(ctxStore?[ctxStore]:null);
     const ss=sname&&STORE_SYN[sname]||{};
     const Qn=Q1.map(x=>ss[x]||x);
     if(!Qn.length&&!store){miss.push(segRaw);return}
+    if(!Qn.length){const c=q.num?P.list.filter(({f})=>f.store===store[0]&&norm(f.n).includes(String(q.num))).map(x=>x.f):[];if(!c.length){miss.push(segRaw);return}q.last=ctx.lastAmt&&ctx.lastAmt[c[0].fid];items.push({key:store[0]+" "+q.num,q,alts:c.slice(0,6),f:c[0],amt:Math.round(amtFor(c[0],{...q,unit:q.unit||"pc"})*100)/100,text:segRaw});return}
     const key=Qn.join(" ");
     const scored=[];
     P.list.forEach(({f,toks,raw})=>{
@@ -114,8 +116,9 @@ function parse(text,ctx){
       Qn.forEach(qw=>{let b=0;toks.forEach(t=>{if(t===qw)b=3;else if(qw.length>=3&&t.startsWith(qw))b=Math.max(b,2);else if(t.length>=3&&qw.startsWith(t))b=Math.max(b,1.5)});s+=b;if(b)matched++});
       if(!matched)return;
       s-=0.35*(toks.length-matched);s-=1.2*(Qn.length-matched);
-      if(f.store){if(store&&f.store===store[0]){s+=2.5;if(q.num&&norm(f.n).includes(String(q.num)))s+=1.5}else s-=1.5}
+      if(f.store){if(store&&f.store===store[0]){s+=2.5;if(q.num&&norm(f.n).includes(String(q.num)))s+=2.5}else s-=1.5}
       if(segRaw.includes(" ")&&norm(f.n).replace(/[()\-]/g," ").startsWith(segRaw))s+=1;
+      if(q.unit==="pc"&&q.num&&/(^|\s)قطعه(\s|$)/.test(norm(f.n)))s+=1;
       if(ctx.recent&&ctx.recent.includes(f.fid))s+=0.4;
       if(f.fid&&f.fid[0]==="c")s+=0.3;
       if(ctx.learned&&ctx.learned[key]===f.fid&&matched===Qn.length)s+=6;
@@ -138,7 +141,8 @@ function search(text,ctx){
   const foods=ctx.foods||[];const P=prep(foods);
   const raw=norm(text).replace(/[()\-]/g," ").split(/\s+/).filter(Boolean);
   const valid=new Set(ctx.stores||[]);let sname=null;
-  const Q=[];raw.forEach(w=>{if(FILL.has(w)&&w.length<3)return;let s=SYN[w]||w;const st=stem(s);const st2=mapT(w);if(STORE[st2]&&valid.has(STORE[st2])&&!sname){sname=STORE[st2];return}if(STORE[w]&&valid.has(STORE[w])&&!sname){sname=STORE[w];return}Q.push(st2)});
+  const Q=[];raw.forEach(w=>{if(FILL.has(w)&&w.length<3)return;let s=SYN[w]||w;const st=stem(s);const st2=mapT(w);Q.push(st2)});
+  const sw=Q.filter(x=>STORE[x]&&valid.has(STORE[x])),pick=sw.find(x=>STORE[x]!=="شاورما")||sw[0];if(pick){sname=STORE[pick];Q.splice(Q.indexOf(pick),1)}
   if(!Q.length&&!sname)return [];
   const out=[];
   const RWs=new Set(raw.map(w=>SYN[w]||w).concat(raw));const qn=raw.join(" ");
