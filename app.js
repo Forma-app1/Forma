@@ -334,7 +334,7 @@ function vToday(){
     <div class="row"><span class="lbl">${over?"زيادة عن هدفك":"باقي لك اليوم"}</span><span class="lbl num">${fmt(t.k)} / ${fmt(g.kcal)}</span></div>
     <div class="big ${over?"over":""}">${fmt(Math.abs(left))}<small>سعرة</small></div>
     <div class="meter"><i class="${over?"over":""}" style="width:${clamp(t.k/g.kcal*100,0,100)}%"></i></div>
-    <div class="macros">${mac("p","بروتين",t.p,g.p)}${mac("","كارب",t.c,g.c)}${mac("","دهون",t.f,g.f)}</div>
+    <div class="macros">${mac("p","بروتين",t.p,g.p)}${mac("c","كارب",t.c,g.c)}${mac("f","دهون",t.f,g.f)}</div>
     <div class="grid2"><button class="primary" data-go="food">سجّل أكلك</button><button class="light" id="openSug">وش آكل؟</button></div>
   </div>
   ${rv?`<div class="card review stack"><div class="row"><h2>مراجعة الأسبوع</h2><span class="pill ${rv.delta?"hot":""}">${rv.delta?(rv.delta>0?"+":"")+rv.delta+" سعرة":"على المسار"}</span></div><p class="note" style="color:var(--ink);font-size:14px">${rv.msg}</p>${rv.delta?`<div class="grid2"><button class="primary" id="rvApply">طبّق التعديل</button><button id="rvSkip">خله زي ما هو</button></div>`:`<button id="rvSkip">تمام</button>`}</div>`:""}
@@ -361,58 +361,77 @@ let tipShift=0,lastSug=[];
 /* ===== الأكل ===== */
 let foodDay=null,cat="الكل",q="";
 function dayLabel(k){if(k===today())return "اليوم";if(k===key(addDays(new Date(),-1)))return "أمس";try{return parseKey(k).toLocaleDateString("ar-u-nu-latn",{weekday:"long",day:"numeric",month:"long"})}catch(e){return k}}
+/* ماكروز ملونة: P بروتين، C كارب، F دهون */
+const mx=(p,c,f)=>`<span class="mx" dir="ltr"><span class="mp">P<b>${p==null?"-":fmt(p)}</b></span><span class="mc">C<b>${c==null?"-":fmt(c)}</b></span><span class="mf">F<b>${f==null?"-":fmt(f)}</b></span></span>`;
+const foodRow=f=>`<button class="item fi" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${f.store&&RESTS.includes(f.store)?esc(f.store)+" · ":""}${f.u==="g"?"لكل 100 جم":"للحبة"}</small>${mx(f.p,f.c,f.f)}</span><span class="kc num">${fmt(f.k)}<small>سعرة</small></span><span class="plus" aria-hidden="true">+</span></button>`;
+let browse=false;
 function vFood(){
   foodDay=foodDay||today();
   const t=totals(foodDay),g=G(),label=dayLabel(foodDay),entries=S.days[foodDay]?.food||[];
+  const left=g.kcal-t.k,over=left<0,pl=Math.max(g.p-t.p,0);
   const prev=foodDay===today()?"أمس":"اليوم اللي قبله";
+  const bar=(cls,v,goal)=>`<div class="fs-m ${cls}"><div class="fs-mt"><i>${cls==="mp"?"P":cls==="mc"?"C":"F"}</i><b class="num">${fmt(v)}</b><span class="num">/${goal}</span></div><div class="fs-mb"><i style="width:${clamp(v/goal*100,0,100)}%"></i></div></div>`;
+  const used=MEALS.filter(m=>entries.some(e=>e.meal===m));
   return `
-  <div class="daybar"><button id="prevD" aria-label="اليوم السابق">→</button><div class="center" style="min-width:0"><div class="d">${label}</div><div class="sub num">${fmt(t.k)} / ${fmt(g.kcal)} سعرة · ${fmt(t.p)} / ${g.p} بروتين</div></div><button id="nextD" aria-label="اليوم التالي" ${foodDay===today()?"disabled":""}>←</button></div>
-  <div class="progress"><i style="width:${clamp(t.k/g.kcal*100,0,100)}%"></i></div>
-  <form class="card stack say" id="sayF" autocomplete="off"><div class="row"><h2>قل وش أكلت اليوم؟</h2><span class="pill">جديد</span></div>
-    <div class="say-in"><input type="text" id="sayIn" enterkeyhint="done" placeholder="مثال: ٣ بيض وخبزة وكوب لبن" dir="auto" aria-label="اكتب وش أكلت">${SR?`<button type="button" id="sayMic" class="mic" aria-label="تكلم">${ICON.mic}</button>`:""}<button type="submit" class="primary">تم</button></div>
-    <p class="note">${SR?"اكتب أو اضغط المايك وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام.":"اكتب، أو اضغط مايك الكيبورد وتكلم. FORMA يفهم الكميات: كوب، صحن، ملعقة، حبة، جرام."}</p></form>
-  <div class="row"><input type="search" id="q" placeholder="ابحث: كبسة، بيض، البيك…" value="${esc(q)}" autocomplete="off" aria-label="ابحث عن أكلة"><button id="scanB" class="scanb" aria-label="امسح باركود">${ICON.scan}</button><button id="quick" style="white-space:nowrap">+ سريعة</button></div>
-  <div class="chips" role="group" aria-label="الأقسام">${["الكل","وجباتي","أكلاتي","مطاعم",...CATS.filter(c=>!RESTS.includes(c))].map(c=>`<button class="chip" data-cat="${c}" aria-pressed="${c===cat}">${c}</button>`).join("")}</div>
-  <div class="card"><div id="results"></div></div>
-  <div class="card stack"><div class="row"><h2>سجل ${label}</h2><button class="ghost" id="openPlan">خطتي المقترحة</button></div>${MEALS.map(m=>{const es=entries.map((e,i)=>({e,i})).filter(o=>o.e.meal===m);
-    const mk=es.reduce((a,o)=>a+macrosOf(eFood(o.e),o.e.amt).k,0);
-    return `<div><div class="meal-h"><h3>${m} <span class="sub num">${fmt(mk)}</span></h3>${es.length?`<button class="ghost" data-savemeal="${m}">احفظها كوجبة</button>`:""}</div>${es.length?es.map(o=>{const f=eFood(o.e),mm=macrosOf(f,o.e.amt);return `<div class="item"><span class="n">${esc(f.n)}<small>${amtLabel(f,o.e.amt)}${f.store&&RESTS.includes(f.store)?" · "+f.store:""}</small></span><span class="m">${fmt(mm.k)} · ${fmt(mm.p)}ب</span><button class="del" data-del="${o.i}" aria-label="احذف ${esc(f.n)}">×</button></div>`}).join(""):`<div class="empty">ما سجلت شي</div>`}</div>`}).join("")}
-  <button id="copyY">${entries.length?`أضف أكل ${prev} هنا`:`نفس أكل ${prev}؟ انسخه بضغطة`}</button></div>`;
+  <div class="fsum">
+    <div class="fs-top"><button id="prevD" class="fs-nav" aria-label="اليوم السابق">→</button>
+      <div class="fs-c"><div class="fs-big num ${over?"over":""}">${fmt(Math.abs(left))}<small>${over?"سعرة زيادة":"سعرة باقية"}</small></div><div class="fs-sub">${label}${pl>0?` · باقي <b class="num">${fmt(pl)}</b> جم بروتين`:" · قفلت بروتينك"}</div></div>
+      <button id="nextD" class="fs-nav" aria-label="اليوم التالي" ${foodDay===today()?"disabled":""}>←</button></div>
+    <div class="fs-macs">${bar("mp",t.p,g.p)}${bar("mc",t.c,g.c)}${bar("mf",t.f,g.f)}</div>
+  </div>
+  <form class="fin" id="sayF" autocomplete="off" role="search">
+    <input type="text" id="sayIn" enterkeyhint="done" placeholder="وش أكلت؟ مثال: 3 بيض وخبزة" dir="auto" aria-label="اكتب وش أكلت أو ابحث" value="${esc(q)}">
+    ${SR?`<button type="button" id="sayMic" class="fin-b" aria-label="تكلم">${ICON.mic}</button>`:""}<button type="button" id="scanB" class="fin-b" aria-label="امسح باركود">${ICON.scan}</button>
+  </form>
+  <div id="results"></div>
+  <div class="card stack flog">
+    <div class="row"><h2>${foodDay===today()?"أكلك اليوم":"أكل "+label}</h2><span class="sub num">${fmt(t.k)} سعرة</span></div>
+    ${used.length?used.map(m=>{const es=entries.map((e,i)=>({e,i})).filter(o=>o.e.meal===m),mk=es.reduce((a,o)=>a+macrosOf(eFood(o.e),o.e.amt).k,0);
+      return `<div><div class="meal-h"><h3>${m} <span class="sub num">${fmt(mk)}</span></h3><button class="ghost" data-savemeal="${m}">احفظها كوجبة</button></div>${es.map(o=>{const f=eFood(o.e),mm=macrosOf(f,o.e.amt);
+        return `<div class="item fi"><span class="n">${esc(f.n)}<small>${amtLabel(f,o.e.amt)}${f.store&&RESTS.includes(f.store)?" · "+esc(f.store):""}</small>${mx(mm.p,f.c==null?null:mm.c,f.f==null?null:mm.f)}</span><span class="kc num">${fmt(mm.k)}<small>سعرة</small></span><button class="del" data-del="${o.i}" aria-label="احذف ${esc(f.n)}">×</button></div>`}).join("")}</div>`}).join("")
+      :`<div class="empty">ما سجلت شي ${foodDay===today()?"اليوم":""}. اكتب وش أكلت فوق.</div>`}
+    <button id="copyY" class="ghost">${entries.length?`أضف أكل ${prev} هنا`:`نفس أكل ${prev}؟ انسخه بضغطة`}</button>
+  </div>
+  ${browse?"":quickBlock()}`;
 }
 function renderResults(){
   const box=$("#results");if(!box)return;
-  const qq=q.trim();let head="",rows=[];
-  const all=FOODS.concat(S.custom);
-  const row=f=>`<button class="item" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${foodSub(f)}</small></span><span class="m">${f.p!=null?r1(f.p)+"ب":""}</span><span class="plus" aria-hidden="true">+</span></button>`;
+  const qq=q.trim(),all=FOODS.concat(S.custom);let html="";
   if(qq){
     const words=qq.split(/\s+/);
     let found=window.FORMA_SAY?FORMA_SAY.search(qq,{foods:all,stores:[...RESTS,"الحطب","المراعي","ندى"],recent:S.recent}):[];
     if(!found.length)found=all.filter(f=>words.every(w=>(f.n+" "+(f.store||"")+" "+f.cat).includes(w)));
-    rows=found.slice(0,60).map(row);
-    if(!rows.length)head=`<div class="empty">ما لقينا "${esc(qq)}". جرّب كلمة ثانية، أو أضفها من "+ سريعة".</div>`;
-  }else if(cat==="الكل"){
-    const rec=S.recent.map(getFood).filter(Boolean);
-    head=rec.length?`<div class="row" style="margin-bottom:2px"><h2>آخر أكلاتك</h2><span class="sub">ضغطة وتنضاف</span></div>`:`<div class="empty">اختر قسم أو ابحث. آخر أكلاتك بتطلع هنا.</div>`;
-    rows=rec.map(row);
-  }else if(cat==="وجباتي"){
-    head=S.meals.length?"":`<div class="empty">سجّل وجبة كاملة، وبعدين اضغط "احفظها كوجبة" تحت. بعدها تضيفها كلها بضغطة.</div>`;
-    rows=S.meals.map((ml,i)=>{const k=ml.items.reduce((a,it)=>{const f=getFood(it.fid);return a+(f?macrosOf(f,it.amt).k:0)},0),p=ml.items.reduce((a,it)=>{const f=getFood(it.fid);return a+(f?macrosOf(f,it.amt).p:0)},0);return `<div class="item"><button class="n" style="background:none;padding:0;text-align:right;color:var(--ink)" data-addmeal="${i}">${esc(ml.n)}<small>${ml.items.length} أصناف · ${fmt(k)} سعرة · ${fmt(p)}ب</small></button><button class="del" data-delmeal="${i}" aria-label="احذف الوجبة">×</button><button class="plus" data-addmeal="${i}" aria-label="أضف ${esc(ml.n)}">+</button></div>`});
-  }else if(cat==="أكلاتي"){
-    head=S.custom.length?"":`<div class="empty">ما عندك أكلات خاصة. اضغط "+ سريعة" وفعّل حفظها.</div>`;
-    rows=S.custom.map(row);
-  }else if(cat==="مطاعم"){
-    if(!restPick){rows=RESTS.map(r=>`<button class="item" data-rest="${r}"><span class="n">${r}<small>${RAW[r].length} صنف · ${SOURCES[r]?SOURCES[r][1].startsWith("رسمي")?"قيم رسمية":"قيم تقديرية":""}</small></span><span class="plus" aria-hidden="true">‹</span></button>`)}
-    else{head=`<div class="row" style="margin-bottom:4px"><button class="ghost" data-rest="">→ كل المطاعم</button><span class="sub">${esc(restPick)}</span></div>`;rows=FOODS.filter(f=>f.cat===restPick).map(row)}
-  }else{
-    rows=FOODS.filter(f=>f.cat===cat).map(row);
+    const multi=words.length>2;
+    html=`<div class="card rlist"><button class="item fi say-go" data-sayrun="1"><span class="n">سجّل «${esc(qq)}»<small>${multi?"FORMA يفصلها ويحسب الكميات":"أو اختر من تحت"}</small></span><span class="plus" aria-hidden="true">✓</span></button>
+      ${found.slice(0,multi?4:8).map(foodRow).join("")}${found.length||multi?"":`<div class="empty">ما لقيناها. <button class="ghost" id="quick" style="padding:0 4px">أضفها بنفسك</button></div>`}</div>`;
+  }else if(browse){
+    const chips=["وجباتي","أكلاتي","مطاعم",...CATS.filter(c=>!RESTS.includes(c))];if(!chips.includes(cat))cat="مطاعم";
+    let rows=[],head="";
+    if(cat==="وجباتي"){head=S.meals.length?"":`<div class="empty">سجّل وجبة، وبعدين اضغط "احفظها كوجبة". بعدها تضيفها كلها بضغطة.</div>`;rows=S.meals.map((ml,i)=>mealRow(ml,i,true))}
+    else if(cat==="أكلاتي"){head=S.custom.length?"":`<div class="empty">ما عندك أكلات خاصة.</div>`;rows=S.custom.map(foodRow)}
+    else if(cat==="مطاعم"){if(!restPick)rows=RESTS.map(r=>`<button class="item" data-rest="${r}"><span class="n">${r}<small>${RAW[r].length} صنف · ${SOURCES[r]&&SOURCES[r][1].startsWith("رسمي")?"قيم رسمية":"قيم تقديرية"}</small></span><span class="plus" aria-hidden="true">‹</span></button>`);
+      else{head=`<button class="ghost" data-rest="" style="margin-bottom:4px">→ كل المطاعم</button>`;rows=FOODS.filter(f=>f.cat===restPick).map(foodRow)}}
+    else rows=FOODS.filter(f=>f.cat===cat).map(foodRow);
+    html=`<div class="row" style="margin-bottom:8px"><h2>تصفح الأكلات</h2><button class="ghost" id="browseB">إغلاق</button></div>
+      <div class="chips" role="group" aria-label="الأقسام">${chips.map(c=>`<button class="chip" data-cat="${c}" aria-pressed="${c===cat}">${c}</button>`).join("")}</div>
+      <div class="card rlist">${head}<div class="list">${rows.join("")}</div></div>`;
   }
-  box.innerHTML=head+`<div class="list">${rows.join("")}</div>`;
+  box.innerHTML=html;
 }
+function quickBlock(){
+    const rec=S.recent.map(getFood).filter(Boolean).slice(0,5);
+  return `${S.meals.length?`<div class="card rlist"><div class="row"><h2>وجباتي</h2><span class="sub">ضغطة وتنضاف كلها</span></div><div class="list">${S.meals.slice(0,3).map((ml,i)=>mealRow(ml,i,false)).join("")}</div></div>`:""}
+      ${rec.length?`<div class="card rlist"><div class="row"><h2>آخر أكلاتك</h2><span class="sub">ضغطة وتنضاف</span></div><div class="list">${rec.map(foodRow).join("")}</div></div>`:""}
+      <div class="flinks"><button class="ghost" id="browseB">تصفح كل الأكلات والمطاعم</button><button class="ghost" id="quick">أكلة مو موجودة؟</button></div>`;
+  
+}
+function mealRow(ml,i,del){const m=ml.items.reduce((a,it)=>{const f=getFood(it.fid);if(!f)return a;const x=macrosOf(f,it.amt);a.k+=x.k;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a},{k:0,p:0,c:0,f:0});
+  return `<div class="item fi"><button class="n" style="background:none;padding:0;text-align:right;color:var(--ink);border-radius:0" data-addmeal="${i}">${esc(ml.n)}<small>${ml.items.length} أصناف</small>${mx(m.p,m.c,m.f)}</button><span class="kc num">${fmt(m.k)}<small>سعرة</small></span>${del?`<button class="del" data-delmeal="${i}" aria-label="احذف الوجبة">×</button>`:""}<button class="plus" data-addmeal="${i}" aria-label="أضف ${esc(ml.n)}">+</button></div>`}
 let restPick="";
 function defaultMeal(){const h=new Date().getHours();return h<11?"فطور":h<16?"غداء":h<20?"سناك":"عشاء"}
 function targetDay(){return tab==="food"&&foodDay?foodDay:today()}
 function pushRecent(fid){S.recent=[fid,...S.recent.filter(x=>x!==fid)].slice(0,12)}
-function afterAdd(k){save();render();const left=G().p-totals(k).p;toast(left>0?`انضافت. باقي ${fmt(left)} جم بروتين`:"قفلت بروتينك اليوم")}
+function afterAdd(k){q="";save();render();const left=G().p-totals(k).p;toast(left>0?`انضافت. باقي ${fmt(left)} جم بروتين`:"قفلت بروتينك اليوم")}
 function sheet(build){
   const bg=document.createElement("div");bg.className="sheet-bg";
   const sh=document.createElement("div");sh.className="sheet";sh.setAttribute("role","dialog");sh.setAttribute("aria-modal","true");
@@ -730,7 +749,7 @@ function openSay(text){
   text=String(text||"").trim();if(!text)return toast("اكتب وش أكلت");
   if(!window.FORMA_SAY)return toast("حدّث الصفحة وجرّب");
   const res=FORMA_SAY.parse(text,{foods:FOODS.concat(S.custom),stores:[...RESTS,"الحطب","المراعي","ندى"],recent:S.recent,lastAmt:S.lastAmt,learned:S.learned||{}});
-  if(!res.items.length){q=text;cat="الكل";const qi=$("#q");if(qi){qi.value=res.miss[0]||text}q=res.miss[0]||text;renderResults();return toast("ما عرفتها. دوّرها في البحث أو أضفها سريعة")}
+  if(!res.items.length){q=res.miss[0]||text;const qi=$("#sayIn");if(qi)qi.value=q;renderResults();return toast("ما عرفتها. اختر من القائمة أو أضفها بنفسك")}
   let meal=res.meal||defaultMeal();
   const its=res.items.map(it=>({...it,fid:it.f.fid}));
   sheet((sh,close)=>{
@@ -740,7 +759,7 @@ function openSay(text){
       sh.innerHTML=`<div class="grab"></div><h2>فهمت كذا</h2><p class="note" style="margin:2px 0 10px">تأكد من الأكلة والكمية. اضغط الاسم إذا تبي غيره.</p>
       <div class="stack" style="gap:10px">${its.map((it,i)=>{const f=getFood(it.fid),m=macrosOf(f,it.amt);return `<div class="say-row">
         <select class="say-sel" data-si="${i}" aria-label="الأكلة">${it.alts.map(a=>`<option value="${a.fid}" ${a.fid===it.fid?"selected":""}>${esc(a.n)}</option>`).join("")}</select>
-        <div class="row" style="gap:8px"><input type="number" inputmode="decimal" class="say-amt" data-sa="${i}" value="${it.amt}" aria-label="الكمية"><span class="sub" style="white-space:nowrap">${f.u==="g"?"جم":"حبة"}</span><span class="m num" style="margin-inline-start:auto;white-space:nowrap" data-sm="${i}">${fmt(m.k)} · ${fmt(m.p)}ب</span><button class="del" data-sd="${i}" aria-label="احذف">×</button></div>
+        <div class="row" style="gap:8px"><input type="number" inputmode="decimal" class="say-amt" data-sa="${i}" value="${it.amt}" aria-label="الكمية"><span class="sub" style="white-space:nowrap">${f.u==="g"?"جم":"حبة"}</span><span class="m num say-m" style="margin-inline-start:auto;white-space:nowrap" data-sm="${i}"><span><b>${fmt(m.k)}</b> سعرة</span>${mx(m.p,f.c==null?null:m.c,f.f==null?null:m.f)}</span><button class="del" data-sd="${i}" aria-label="احذف">×</button></div>
       </div>`}).join("")}
       ${res.miss.map(x=>`<div class="note">ما عرفت "${esc(x)}". <button class="ghost" data-sq="${esc(x)}" style="padding:0 4px">دوّرها</button></div>`).join("")}</div>
       <div class="meals" style="margin-top:12px">${MEALS.map(x=>`<button data-m="${x}" aria-pressed="${x===meal}">${x}</button>`).join("")}</div>
@@ -749,12 +768,12 @@ function openSay(text){
     sh.addEventListener("change",e=>{const i=e.target.dataset.si;if(i==null)return;const it=its[+i],f=getFood(e.target.value);if(!f)return;
       it.fid=f.fid;it.amt=Math.round(FORMA_SAY.amtFor(f,{...it.q,last:S.lastAmt&&S.lastAmt[f.fid]})*100)/100;S.learned=S.learned||{};S.learned[it.key]=f.fid;draw()});
     sh.addEventListener("input",e=>{const i=e.target.dataset.sa;if(i==null)return;const v=parseFloat(e.target.value);if(!(v>0))return;its[+i].amt=v;
-      const m=macrosOf(getFood(its[+i].fid),v);sh.querySelector(`[data-sm="${i}"]`).textContent=`${fmt(m.k)} · ${fmt(m.p)}ب`;
+      const ff=getFood(its[+i].fid),m=macrosOf(ff,v);sh.querySelector(`[data-sm="${i}"]`).innerHTML=`<span><b>${fmt(m.k)}</b> سعرة</span>${mx(m.p,ff.c==null?null:m.c,ff.f==null?null:m.f)}`;
       let tk=0,tp=0;its.forEach(it=>{const mm=macrosOf(getFood(it.fid),it.amt);tk+=mm.k;tp+=mm.p});sh.querySelector("#sayAdd").textContent=`أضف ${fmt(tk)} سعرة · ${fmt(tp)} بروتين`});
     sh.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
       if(b.dataset.m){meal=b.dataset.m;return draw()}
       if(b.dataset.sd!=null){its.splice(+b.dataset.sd,1);if(!its.length&&!res.miss.length)return close();return draw()}
-      if(b.dataset.sq!=null){close();q=b.dataset.sq;cat="الكل";const qi=$("#q");if(qi)qi.value=q;renderResults();qi&&qi.focus();return}
+      if(b.dataset.sq!=null){close();q=b.dataset.sq;const qi=$("#sayIn");if(qi)qi.value=q;renderResults();qi&&qi.focus();return}
       if(b.id==="sayAdd"){const k=targetDay();its.forEach(it=>{if(it.amt>0){day(k).food.push({fid:it.fid,amt:it.amt,meal});pushRecent(it.fid)}});
         close();afterAdd(k)}});
   });
@@ -904,7 +923,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.5 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.6 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
@@ -934,7 +953,7 @@ function render(){
   window.scrollTo(0,0);
 }
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
-document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today()}render()}});
+document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today();q="";browse=false}render()}});
 $("#gearB").addEventListener("click",()=>{tab="settings";ed=null;resetArmed=cycleArmed=false;render()});
 $("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup"){if(S.profile)submitSetup();else wizNext()}if(e.target.id==="sayF")openSay($("#sayIn").value)});
 $("#view").addEventListener("click",e=>{
@@ -946,7 +965,8 @@ $("#view").addEventListener("click",e=>{
   if(d.wz==="back"){readSetupFields();ob.step=Math.max(0,(ob.step||0)-1);return render()}
   if(d.go){tab=d.go;if(tab!=="setup")ob=null;if(tab!=="edit")ed=null;if(tab==="food")foodDay=today();render();return}
   if(d.add!==undefined)return openFood(d.add);
-  if(d.cat){cat=d.cat;restPick="";q="";const qi=$("#q");if(qi)qi.value="";document.querySelectorAll(".chip[data-cat]").forEach(c=>c.setAttribute("aria-pressed",c.dataset.cat===cat));return renderResults()}
+  if(d.cat){cat=d.cat;restPick="";return renderResults()}
+  if(d.sayrun){return openSay(q)}
   if(d.rest!==undefined){restPick=d.rest;return renderResults()}
   if(d.del!==undefined){day(foodDay).food.splice(+d.del,1);save();return render()}
   if(d.savemeal){const items=(S.days[foodDay]?.food||[]).filter(x=>x.meal===d.savemeal&&x.fid).map(x=>({fid:x.fid,amt:x.amt}));if(!items.length)return toast("ما فيه أصناف تنحفظ");const n=items.slice(0,2).map(it=>getFood(it.fid)?.n).filter(Boolean).join(" + ")+(items.length>2?" +"+(items.length-2):"");S.meals.unshift({n,items});save();return toast("انحفظت في وجباتي")}
@@ -982,7 +1002,8 @@ $("#view").addEventListener("click",e=>{
     case "wSave":{const v=parseFloat($("#wIn").value);if(v>=35&&v<=250){day(today()).weight=v;save();render();toast("انحفظ وزنك")}else toast("اكتب وزن صحيح بالكيلو");return}
     case "prevD":foodDay=key(addDays(parseKey(foodDay),-1));return render();
     case "nextD":if(foodDay!==today()){foodDay=key(addDays(parseKey(foodDay),1));render()}return;
-    case "quick":return openQuick();
+    case "quick":return openQuick({name:q.trim()&&q.trim().split(/\s+/).length<5?q.trim():""});
+    case "browseB":browse=!browse;cat=browse?"مطاعم":cat;restPick="";render();if(browse){const r=$("#results");if(r)window.scrollTo({top:r.getBoundingClientRect().top+window.scrollY-200})}return;
     case "scanB":return openScan();
     case "sayMic":return listen(b);
     case "copyY":{const src=S.days[key(addDays(parseKey(foodDay),-1))];if(src&&src.food.length){day(foodDay).food.push(...src.food.map(x=>({...x})));save();render();toast("انضاف أكل اليوم السابق")}else toast("ما فيه أكل مسجل في اليوم السابق");return}
@@ -998,7 +1019,7 @@ $("#view").addEventListener("click",e=>{
 });
 $("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0])});
 $("#view").addEventListener("input",e=>{
-  if(e.target.id==="q"){q=e.target.value;return renderResults()}
+  if(e.target.id==="sayIn"){q=e.target.value;return renderResults()}
   if(e.target.dataset.ed&&ed){const [f,si,i]=e.target.dataset.ed.split("|");const v=e.target.value;
     if(f==="sn")ed.sessions[+si].n=v;else if(f==="r")ed.sessions[+si].ex[+i][2]=v;else if(f==="pn")ed.name=v;else if(f==="wk")ed.weeks=v;return}
   const k=e.target.dataset.k;

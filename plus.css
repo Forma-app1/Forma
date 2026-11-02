@@ -74,3 +74,55 @@ a.btn.primary{background:var(--accent);color:var(--on-accent)}
 .hp{color:var(--accent);font-weight:800}
 .hero .hp{color:var(--slab-accent)}
 @media (prefers-reduced-motion:reduce){.rise,.wz,.pj-line,.scanframe i::after{animation:none!important;opacity:1;transform:none;stroke-dashoffset:0}}
+
+/* FORMA 2.6: ماكروز ملونة + صفحة أكل أبسط */
+:root{--mp:#0E8A5F;--mc:#B7791F;--mf:#D2452F}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--mp:#4ADE80;--mc:#FBBF24;--mf:#F87171}}
+:root[data-theme="dark"]{--mp:#4ADE80;--mc:#FBBF24;--mf:#F87171}
+.mx{display:inline-flex;gap:10px;margin-top:4px;font-family:var(--display);font-size:12px;font-weight:800;letter-spacing:.01em;align-self:flex-start}
+.mx>span{display:inline-flex;align-items:baseline;gap:2px}
+.mx b{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.mp{color:var(--mp)}.mc{color:var(--mc)}.mf{color:var(--mf)}
+.item.fi{align-items:center}
+.item.fi .n small{font-size:12px}
+.kc{display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-weight:800;font-size:16px;line-height:1.1;min-width:44px;color:var(--ink)}
+.kc small{font-size:10.5px;font-weight:500;color:var(--muted)}
+/* ملخص اليوم فوق صفحة الأكل */
+.fsum{position:sticky;top:calc(62px + env(safe-area-inset-top,0px));z-index:4;background:var(--surface);border-radius:22px;padding:12px 12px 14px;box-shadow:0 0 0 1px var(--line) inset,0 6px 18px rgba(0,0,0,.06)}
+.fs-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fs-nav{width:36px;height:36px;padding:0;border-radius:12px;background:var(--raise);color:var(--muted);flex:none}
+.fs-c{text-align:center;min-width:0}
+.fs-big{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.1;color:var(--ink)}
+.fs-big small{font-size:13px;font-weight:600;color:var(--muted);margin-inline-start:6px}
+.fs-big.over{color:var(--hot)}
+.fs-sub{font-size:12.5px;color:var(--muted)}.fs-sub b{color:var(--mp);font-family:var(--display)}
+.fs-macs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;direction:ltr}
+.fs-mt{display:flex;align-items:baseline;gap:4px;font-family:var(--display);font-size:13px}
+.fs-mt i{font-style:normal;font-weight:800}
+.fs-mt b{font-weight:700;color:var(--ink)}.fs-mt span{color:var(--muted);font-size:11.5px}
+.fs-mb{height:5px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:4px}
+.fs-mb i{display:block;height:100%;border-radius:99px}
+.fs-m.mp .fs-mt i{color:var(--mp)}.fs-m.mp .fs-mb i{background:var(--mp)}
+.fs-m.mc .fs-mt i{color:var(--mc)}.fs-m.mc .fs-mb i{background:var(--mc)}
+.fs-m.mf .fs-mt i{color:var(--mf)}.fs-m.mf .fs-mb i{background:var(--mf)}
+/* خانة وحدة: اكتب، تكلم، أو امسح */
+.fin{display:flex;gap:8px;align-items:center;background:var(--surface);border-radius:18px;padding:6px;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--accent) 40%,var(--line)) inset}
+.fin input{flex:1;border:0;background:transparent;box-shadow:none;font-size:16px;padding:10px 8px;min-width:0}
+.fin input:focus-visible{outline:none}
+.fin-b{width:44px;height:44px;padding:0;display:grid;place-items:center;border-radius:14px;background:var(--raise);color:var(--ink);flex:none}
+.fin-b svg{width:21px;height:21px}
+.fin-b.on{background:var(--hot);color:#fff}
+.rlist{padding-block:8px}
+.rlist h2{font-size:15px}
+.say-go .n{color:var(--accent-ink)}
+.say-go .plus{background:var(--accent);color:var(--on-accent)}
+.flinks{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.flinks .ghost{color:var(--accent-ink);padding:6px 4px}
+.flog .meal-h{margin-top:6px}
+.flog .meal-h .ghost{font-size:12px}
+/* ألوان الماكروز في البطاقة والهيرو */
+.mac.c .mbar i{background:var(--mc)}.mac.f .mbar i{background:var(--mf)}
+.hero .mac.c .v{color:#FBBF24}.hero .mac.f .v{color:#F87171}.hero .mac.c .mbar i{background:#FBBF24}.hero .mac.f .mbar i{background:#F87171}
+.mrow div:nth-child(2) b{color:var(--mp)}.mrow div:nth-child(3) b{color:var(--mc)}.mrow div:nth-child(4) b{color:var(--mf)}
+
+.say-m{display:flex;flex-direction:column;align-items:flex-end;gap:0;font-size:12px}.say-m b{font-size:15px;color:var(--ink)}.say-m .mx{margin-top:2px;align-self:auto}
