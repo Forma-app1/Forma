@@ -89,3 +89,31 @@ window.FORMA_PLAN = {
 "عشاء":[[["تونة بالماء",195],["خبز عربي بر",60],["أفوكادو",100]],[["صدر دجاج مشوي",170],["خبز عربي بر",60],["حمص متبل",65]],[["سالمون",175],["بطاطا حلوة",175],["بروكلي",100]]],
 "سناك":[[["زبادي يوناني قليل الدسم",270],["فراولة",205],["لوز",20]],[["واي بروتين",30],["موز",120],["زبدة فول سوداني",15]],[["تمر",24],["لبن",260],["لوز",20]]]
 };
+
+/* أسماء التمارين بالعربي (سطر صغير تحت الاسم الإنجليزي) */
+window.FORMA_AR = {
+"45° Back Extension":"تمديد الظهر 45°","Adductor Machine":"جهاز ضم الفخذ","Assisted Pull-Up":"عقلة بالمساعدة","Back Squat":"سكوات بالبار",
+"Banded Side Walk":"مشي جانبي بالمطاط","Bayesian Cable Curl":"بايسبس كيبل من ورا","Behind-the-Back Cable Curl":"بايسبس كيبل من ورا الظهر","Behind-the-Back D-Handle Curl":"بايسبس كيبل من ورا الظهر بمقبض",
+"Bench Press":"بنش مستوي بالبار","Cable Biceps Curl":"بايسبس بالكيبل","Cable Chest Fly":"تفتيح صدر بالكيبل","Cable Crunch":"بطن بالكيبل",
+"Cable Hip Abduction":"تبعيد الورك بالكيبل","Cable Lateral Raise":"رفرفة جانبي بالكيبل","Cable Overhead Extension":"ترايسبس فوق الراس بالكيبل","Cable Reverse Curl":"كيرل عكسي بالكيبل",
+"Cable Rope Hammer Curl":"هامر بالحبل","Cable Upper Chest Fly":"تفتيح صدر علوي بالكيبل","Calf Raise Machine":"جهاز السمانة","Chest Fly Machine":"جهاز تفتيح الصدر",
+"Chest Press Machine":"جهاز دفع الصدر","Chest-Supported Row":"سحب مسنود على الصدر","Close-Grip Lat Pulldown":"سحب أمامي قبضة ضيقة","Copenhagen Plank":"بلانك جانبي كوبنهاقن",
+"DB Lateral Raise":"رفرفة جانبي بالدمبل","Dips":"متوازي","Dumbbell Bench Press":"بنش مستوي بالدمبل","Dumbbell Curl":"بايسبس بالدمبل",
+"Dumbbell Lateral Raise":"رفرفة جانبي بالدمبل","Dumbbell Shoulder Press":"دفع كتف بالدمبل","Dumbbell Shrug":"ترابيس بالدمبل","EZ Bar Curl":"بايسبس بالبار المتعرج",
+"EZ Bar Reverse Curl":"كيرل عكسي بالبار المتعرج","Face Pull":"فيس بول بالحبل","Flat Chest Press":"دفع صدر مستوي","Flat Chest Press Machine":"جهاز صدر مستوي",
+"Flat Press":"دفع صدر مستوي","Glute Bridge":"جسر الأرداف","Hack Squat":"هاك سكوات","Hammer Curl":"هامر بالدمبل",
+"Hanging Leg Raise":"رفع الرجلين معلّق","Hip Abduction Machine":"جهاز تبعيد الورك","Hip Thrust":"هيب ثرست بالبار","Hip Thrust Machine":"جهاز هيب ثرست",
+"Iliac Lat Pulldown":"سحب أمامي للظهر السفلي","Incline Bench Press":"بنش عالي بالبار","Incline Chest Press":"دفع صدر عالي","Incline Dumbbell Curl":"بايسبس دمبل على كرسي مائل",
+"Incline Dumbbell Press":"بنش عالي بالدمبل","Incline Machine Press":"جهاز صدر عالي","Lat Pulldown":"سحب أمامي","Lat Row":"سحب أرضي للمجنص",
+"Lateral Raise":"رفرفة جانبي","Lateral Raise Machine":"جهاز رفرفة جانبي","Leg Extension":"رجل أمامي (تمديد)","Leg Press":"دفع الرجل",
+"Leg Press Calf Raise":"سمانة على جهاز الرجل","Leg Press Machine":"جهاز دفع الرجل","Lying Leg Curl":"رجل خلفي منبطح","Machine Chest Press":"جهاز دفع الصدر",
+"Machine Crunch":"جهاز البطن","Machine Shoulder Press":"جهاز دفع الكتف","Overhead Press":"دفع كتف بالبار واقف","Overhead Tricep Extension":"ترايسبس فوق الراس",
+"Overhead Triceps Extension":"ترايسبس فوق الراس","Pec Deck":"جهاز الفراشة","Pec Deck Fly":"جهاز الفراشة","Pendulum Squat":"سكوات بندولم",
+"Preacher Curl":"بايسبس على كرسي بريتشر","Preacher Curl Machine":"جهاز بايسبس بريتشر","Preacher Dumbbell Curl":"بايسبس بريتشر بالدمبل","Pull-Up":"عقلة",
+"Rear Delt Cable Fly":"كتف خلفي بالكيبل","Rear Delt Fly":"كتف خلفي","Rear Delt Machine":"جهاز كتف خلفي","Reverse Pec Deck":"كتف خلفي على جهاز الفراشة",
+"Romanian Deadlift":"ديدلفت روماني","Rope Pushdown":"ترايسبس بالحبل","Seated Cable Row":"سحب أرضي بالكيبل","Seated Cable Row (Wide Grip)":"سحب أرضي قبضة عريضة",
+"Seated Calf Raise":"سمانة جالس","Seated EZ Bar Curl":"بايسبس بالبار المتعرج جالس","Seated Hamstring Curl":"رجل خلفي جالس","Seated Leg Curl":"رجل خلفي جالس",
+"Seated Row Machine":"جهاز سحب أرضي","Shoulder Press Machine":"جهاز دفع الكتف","Shrug Machine":"جهاز ترابيس","Shrugs":"ترابيس",
+"Sissy Squat":"سيسي سكوات","Skull Crusher":"ترايسبس منبطح بالبار","Standing Calf Raise":"سمانة واقف","Stiff-Leg Deadlift":"ديدلفت برجل مفرودة",
+"T-Bar Row":"سحب تي بار","T-Bar Row (Lower Traps)":"سحب تي بار للترابيس السفلي","Tricep Pushdown":"ترايسبس بالكيبل","Triceps Pushdown":"ترايسبس بالكيبل","Wide Grip Row":"سحب أرضي قبضة عريضة"
+};

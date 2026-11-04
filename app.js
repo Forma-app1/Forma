@@ -164,8 +164,69 @@ const progTotal=()=>prog().weeks*prog().days;
 /* ===== التثبيت ===== */
 const isStandalone=()=>window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
 const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
-let deferredPrompt=null,tab="today";
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;if(tab==="today")render()});
+let deferredPrompt=null,tab="today",wEdit=false;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;if(tab==="today"||tab==="setup")render()});
+window.addEventListener("appinstalled",()=>{deferredPrompt=null;toast("انثبّت FORMA. افتحه من الأيقونة");render()});
+const UA=navigator.userAgent,isAndroid=/Android/i.test(UA);
+const inApp=/FBAN|FBAV|FB_IAB|Instagram|BytedanceWebview|musical_ly|TikTok|Snapchat|Twitter|LinkedInApp|Line\/|GSA\/|Telegram/i.test(UA);
+const iosOther=isIOS&&/CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser/i.test(UA);
+/* وش نوع التثبيت المناسب لهذا الجهاز */
+function instKind(){if(isStandalone())return"";if(inApp&&(isIOS||isAndroid))return"inapp";if(isIOS)return iosOther?"ios-other":"ios";if(deferredPrompt)return"prompt";if(isAndroid)return"android";return""}
+const instGet=k=>{try{return+localStorage.getItem("forma-inst-"+k)||0}catch(e){return 0}};
+const instSet=k=>{try{localStorage.setItem("forma-inst-"+k,String(Date.now()))}catch(e){}};
+const needGate=()=>{const k=instKind();return !!k&&(k!=="prompt"||isAndroid)&&!instGet("skip")};
+const IIC={
+  share:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>`,
+  plus:`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
+  dots:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`,
+  vdots:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`,
+  app:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`
+};
+function instSteps(k){
+  const st=(ic,t)=>`<li><span class="ins-ic">${ic}</span><span>${t}</span></li>`;
+  const add=st(IIC.plus,"اختر <b>«إضافة إلى الشاشة الرئيسية»</b>. إذا ما لقيته، انزل تحت في القائمة")+st(IIC.app,"اضغط <b>«إضافة»</b>، وافتح FORMA من الأيقونة اللي على شاشتك");
+  if(k==="inapp")return `<ol class="ins-steps">${st(isIOS?IIC.dots:IIC.vdots,"أنت فاتح الرابط من داخل تطبيق. اضغط <b>"+(isIOS?"⋯":"⋮")+"</b> فوق")}${st(IIC.share,`اختر <b>«فتح في ${isIOS?"Safari":"Chrome"}»</b> أو <bdi dir="ltr">Open in browser</bdi>`)}${st(IIC.app,"بعدها تطلع لك خطوات التثبيت")}</ol>
+    <button type="button" class="ghost wide" id="instCopy">انسخ الرابط والصقه في ${isIOS?"Safari":"Chrome"}</button>`;
+  if(k==="ios")return `<ol class="ins-steps">${st(IIC.share,"اضغط زر <b>المشاركة</b> تحت الشاشة. إذا ما شفته، اضغط <b>⋯</b> أول")}${add}</ol>`;
+  if(k==="ios-other")return `<ol class="ins-steps">${st(IIC.share,"اضغط زر <b>المشاركة</b> جنب الرابط فوق")}${add}</ol>`;
+  if(k==="prompt")return `<button type="button" class="primary wide" id="doInstall">ثبّت الحين</button>`;
+  if(k==="android")return `<ol class="ins-steps">${st(IIC.vdots,"اضغط <b>⋮</b> فوق في المتصفح")}${st(IIC.plus,"اختر <b>«تثبيت التطبيق»</b> أو «إضافة إلى الشاشة الرئيسية»")}${st(IIC.app,"افتح FORMA من الأيقونة اللي على شاشتك")}</ol>`;
+  return "";
+}
+function vInstall(){
+  const k=instKind(),ico=(document.querySelector('link[rel="apple-touch-icon"]')||{}).href||"apple-touch-icon.png";
+  return `<div class="ins">
+    <img class="ins-logo" src="${ico}" alt="" width="76" height="76">
+    <h1>ثبّت FORMA على جوالك</h1>
+    <div class="sub">يصير تطبيق على شاشتك. يفتح بشاشة كاملة ويشتغل بدون نت.</div>
+    <div class="card">${instSteps(k)}</div>
+    ${isIOS?`<p class="note">ثبّته قبل تبدأ. اللي تسجله في المتصفح ما ينتقل للتطبيق.</p>`:""}
+    <button type="button" class="ghost wide" id="instSkip">أكمل في المتصفح</button>
+  </div>`;
+}
+
+/* شاشة افتتاحية للآيفون: تنرسم مرة وحدة لمقاس الجهاز وتنقرا وقت الإضافة للشاشة */
+function iosSplash(){
+  if(!isIOS||isStandalone())return;
+  const at=document.querySelector('link[rel="apple-touch-icon"]');if(!at)return;
+  const img=new Image();
+  img.onload=()=>{try{
+    const r=window.devicePixelRatio||1,w=screen.width,h=screen.height;
+    const mk=(bg,W,H)=>{const c=document.createElement("canvas");c.width=W*r;c.height=H*r;const x=c.getContext("2d");
+      x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);const z=Math.round(Math.min(W,H)*.27*r),X=(c.width-z)/2,Y=(c.height-z)/2-z*.15,rad=z*.225;
+      x.save();x.beginPath();x.moveTo(X+rad,Y);x.arcTo(X+z,Y,X+z,Y+z,rad);x.arcTo(X+z,Y+z,X,Y+z,rad);x.arcTo(X,Y+z,X,Y,rad);x.arcTo(X,Y,X+z,Y,rad);x.closePath();x.clip();
+      x.drawImage(img,X,Y,z,z);x.restore();return c.toDataURL("image/png")};
+    const add=(media,href)=>{const l=document.createElement("link");l.rel="apple-touch-startup-image";l.media=media;l.href=href;document.head.appendChild(l)};
+    const base=o=>`screen and (device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${r}) and (orientation: ${o})`;
+    const dark=matchMedia("(prefers-color-scheme: dark)").matches,BG={light:"#F1F3F1",dark:"#0B0F0E"};
+    [["portrait",w,h],["landscape",h,w]].forEach(([o,W,H])=>{
+      add(base(o)+" and (prefers-color-scheme: light)",mk(BG.light,W,H));
+      add(base(o)+" and (prefers-color-scheme: dark)",mk(BG.dark,W,H));
+      add(base(o),mk(dark?BG.dark:BG.light,W,H))});
+  }catch(e){}};
+  img.src=at.href.replace(/apple-touch-icon\.png(\?.*)?$/,"icon-512.png");
+}
+iosSplash();
 
 /* ===== الإعداد ===== */
 const welcomeLogo=()=>{const el=document.querySelector("#hdr .logo");return el?el.innerHTML.replace(/fh(bg|gr|or)/g,"fw$1"):"FORMA"};
@@ -174,6 +235,7 @@ function vSetup(){
   const p=S.profile||{};
   if(!ob)ob={name:p.name||"",sex:p.sex||"ذكر",age:p.age||"",h:p.h||"",w:p.w||"",tw:p.tw||"",act:p.act??2,goal:p.goal??0,prog:S.prog||DEFP};
   const edit=!!S.profile;
+  if(!edit&&!(ob.step>0)&&needGate())return vInstall();
   if(!edit)return vWizard();
   return `
   <div class="welcome">${edit?"":`<div class="logo" aria-label="FORMA">${welcomeLogo()}</div>`}<h1>${edit?"عدّل بياناتك":"نبدأ بخطتك"}</h1><div class="sub">${edit?"نعيد حساب سعراتك وبروتينك على البيانات الجديدة.":"دقيقة وحدة. نحسب لك السعرات والبروتين ونجهز برنامجك."}</div></div>
@@ -321,10 +383,10 @@ function vToday(){
   const hr=new Date().getHours(),greet=hr<12?"صباح الخير":hr<18?"هلا":"مساء الخير";
   const rv=weeklyReview();
   const sg=suggestions(sugFilter);
-  let install="";
-  if(!isStandalone()){
-    if(deferredPrompt)install=`<div class="card install row"><div><h2>ثبّت FORMA</h2><div class="sub">يفتح بشاشة كاملة ويشتغل بدون نت</div></div><button class="primary" id="doInstall">ثبّت</button></div>`;
-    else if(isIOS)install=`<div class="card install"><h2>ثبّت FORMA على شاشتك</h2><ol><li>اضغط زر المشاركة في Safari</li><li>اختر "إضافة إلى الشاشة الرئيسية"</li><li>افتح FORMA من الأيقونة</li></ol></div>`;
+  let install="";const ik=instKind();
+  if(ik&&Date.now()-instGet("later")>3*864e5){
+    if(ik==="prompt")install=`<div class="card install row"><div><h2>ثبّت FORMA</h2><div class="sub">يفتح بشاشة كاملة ويشتغل بدون نت</div></div><button class="primary" id="doInstall">ثبّت</button></div>`;
+    else install=`<div class="card install"><div class="row"><h2>ثبّت FORMA على شاشتك</h2><button type="button" class="ins-x" id="instLater" aria-label="لاحقاً">×</button></div>${instSteps(ik)}${isIOS&&ik!=="inapp"?`<p class="note">بياناتك هنا ما تنتقل للتطبيق لحالها. خذ «نسخة احتياطية» من ملفك، واسترجعها بعد ما تفتح التطبيق.</p>`:""}</div>`;
   }
   const mac=(cls,name,v,goal)=>`<div class="mac ${cls}"><div class="v">${fmt(v)}<span> / ${goal} ${name}</span></div><div class="mbar"><i style="width:${clamp(v/goal*100,0,100)}%"></i></div></div>`;
   return `
@@ -343,16 +405,14 @@ function vToday(){
     <div class="chips">${[["all","الكل"],["home","أكل بيت"],["rest","مطاعم"]].map(([k,l])=>`<button class="chip" data-sug="${k}" aria-pressed="${sugFilter===k}">${l}</button>`).join("")}</div>
     <div class="list">${sg.list.length?sg.list.map((c,i)=>`<button class="item" data-sugadd="${i}"><span class="n">${esc(c.label)}<small>${esc(c.sub)}${c.dense?' · <b class="hp">بروتين عالي</b>':""}</small></span><span class="m">${fmt(c.k)} · ${fmt(c.p)}ب</span><span class="plus" aria-hidden="true">+</span></button>`).join(""):`<div class="empty">ما فيه خيار يركب على الباقي. جرّب قسم ثاني.</div>`}</div>
   </div>
-  <div class="card stack">
-    <div class="row"><span class="lbl">تمرينك الجاي</span><span class="pill">${esc(P.ar)}</span></div>
-    <div class="row"><div class="num" style="font-size:24px;font-weight:800" dir="auto">${esc(sName(nx.n))}</div><span class="sub">${nx.day?"يومه المقترح "+nx.day+" · ":""}${nx.ex.length} تمارين</span></div>
-    <div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div>
-    <div class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()} · يمشي بالترتيب، لو ريّحت يوم يبقى ينتظرك</div>
-    ${S.days[T]?.trained?`<span class="pill" style="align-self:flex-start">تمرّنت اليوم</span>`:`<button class="ink" data-go="train">ابدأ التمرين</button>`}
+  <div class="card nx">
+    <div class="row"><div class="nx-l"><span class="lbl">تمرينك الجاي · ${esc(P.ar)}</span><div class="nx-t"><b class="num" dir="auto">${esc(sName(nx.n))}</b><span class="sub">${nx.ex.length} تمارين${nx.day?" · "+nx.day:""}</span></div></div>
+    ${S.days[T]?.trained?`<span class="pill">تمرّنت اليوم ✓</span>`:`<button class="ink nx-go" data-go="train">ابدأ</button>`}</div>
+    <div class="nx-p"><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div><span class="sub num">${Math.min(progDone()+1,progTotal())}/${progTotal()}</span></div>
   </div>
-  <div class="card stack"><div class="row"><h2>وزن اليوم</h2><span class="sub">${trend()?`متوسط الأسبوع ${r1(trend().avg)} كغ`:""}</span></div>
-    <div class="row"><input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${S.days[T]?.weight??""}"><button class="primary" id="wSave">حفظ</button></div>
-    <p class="note">اوزن نفسك الصبح بعد الحمام وقبل الأكل. FORMA يعتمد على متوسط الأسبوع.</p></div>
+  ${S.days[T]?.weight&&!wEdit?`<div class="card wrow"><div><span class="lbl">وزن اليوم</span><div class="nx-t"><b class="num">${r1(S.days[T].weight)} <small>كغ</small></b>${trend()?`<span class="sub">متوسط الأسبوع ${r1(trend().avg)}</span>`:""}</div></div><button class="ghost" id="wEdit">عدّل</button></div>`
+  :`<div class="card stack wcard"><div class="row"><h2>وزن اليوم</h2><span class="sub">الصبح، قبل الأكل</span></div>
+    <div class="row"><input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${S.days[T]?.weight??""}"><button class="primary" id="wSave">حفظ</button></div></div>`}
   <div class="card flat tip"><span class="q">”</span><p id="tipText">${esc(TIPS[(tipBase()+tipShift)%TIPS.length])}</p></div>`;
 }
 const tipBase=()=>{const d=new Date();return (d.getDate()+d.getMonth()*31)%TIPS.length};
@@ -583,17 +643,11 @@ function vTrain(){
   <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
   ${P.note?`<p class="note">${esc(P.note)}</p>`:""}
   <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
-  <button class="ed-add" id="openEdit">عدّل الجدول</button>
-  <details class="card flat"><summary>طريقة التمرين في FORMA ‹</summary><ul class="guide" style="margin-top:8px">
-    <li>اكتب الوزن والعدات لكل مجموعة. الخانة الفاضية تاخذ رقم المرة الماضية، فإذا كررته اضغط ✓ بس.</li>
-    <li>وقّف قبل الفشل بعدة أو عدتين. آخر مجموعة في تمارين العزل كمّلها للفشل.</li>
-    <li>إذا وصلت أعلى العدات في كل المجموعات، يطلع لك "زد الوزن" المرة الجاية.</li>
-    <li>الجهاز مشغول؟ اضغط "بدّل" واختر بديل.</li><li>تبي تغيّر التمارين أو المجموعات أو العدات؟ اضغط "عدّل الجدول".</li></ul></details>
   ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
   <div class="card ex-list">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
     const up=last&&last.length>=sets&&last.slice(0,sets).every(x=>x[1]>=top),dc=doneCnt(n,sets),complete=dc>=sets,open=live.open===i;
-    if(!open)return `<button class="ex ex-c ${complete?"ok":""}" data-exo="${i}"><span class="ex-ci" aria-hidden="true">${complete?"✓":i+1}</span><span class="ex-cn"><b dir="ltr">${esc(n)}</b><small class="num">${sets} مجموعات · ${esc(reps)} عدات${last?` · آخر مرة ${Math.max(...last.map(x=>x[0]))} كغ`:""}${up?" · زد الوزن":""}</small></span><span class="ex-cc num">${complete?"خلص":dc?dc+"/"+sets:""}</span></button>`;
-    return `<div class="ex open" id="exOpen"><div class="ex-h"><div style="min-width:0"><a href="${yt(n)}" target="_blank" rel="noopener">${esc(n)} ↗</a>
+    if(!open)return `<button class="ex ex-c ${complete?"ok":""}" data-exo="${i}"><span class="ex-ci" aria-hidden="true">${complete?"✓":i+1}</span><span class="ex-cn"><b dir="ltr">${esc(n)}</b>${arN(n)?`<i class="ex-ar">${arN(n)}</i>`:""}<small class="num">${sets} مجموعات · ${esc(reps)} عدات${last?` · آخر مرة ${Math.max(...last.map(x=>x[0]))} كغ`:""}${up?" · زد الوزن":""}</small></span><span class="ex-cc num">${complete?"خلص":dc?dc+"/"+sets:""}</span></button>`;
+    return `<div class="ex open" id="exOpen"><div class="ex-h"><div style="min-width:0"><a href="${yt(n)}" target="_blank" rel="noopener">${esc(n)} ↗</a>${arN(n)?`<div class="ex-ar">${arN(n)}</div>`:""}
       <div class="meta"><span class="pill mute num">${sets} مجموعات</span><span class="pill mute num">${reps} عدات</span>${up?`<span class="pill">زد الوزن</span>`:""}${n!==e[0]?`<span class="pill mute">بديل</span>`:""}</div></div>
       <div class="ex-tools">${last?`<button class="swap" data-hist="${esc(n)}" aria-label="سجل ${esc(n)}">${ICON.chart}</button>`:""}${ALTS[e[0]]||n!==e[0]?`<button class="swap" data-swap="${i}">بدّل</button>`:""}</div></div>
     <div class="last num">${last?`آخر مرة: ${last.map(x=>x[0]+"×"+x[1]).join("  ·  ")}${best?`  ·  أفضل ${best}`:""}`:"أول مرة: ابدأ بوزن مريح، وآخر عدتين تكون صعبة"}</div>
@@ -601,16 +655,23 @@ function vTrain(){
     ${Array.from({length:sets},(_,j)=>{const v=live.v[n+"|"+j]||{},ph=last&&last[j]?last[j]:["",""],isPr=best&&+v.kg>best;
       return `<span class="h num">${j+1}</span><input type="number" inputmode="decimal" class="${isPr?"pr":""}" aria-label="${esc(n)} مجموعة ${j+1} وزن" data-k="${esc(n)}|${j}|kg" data-best="${best}" placeholder="${ph[0]}" value="${v.kg??""}"><input type="number" inputmode="numeric" aria-label="${esc(n)} مجموعة ${j+1} عدات" data-k="${esc(n)}|${j}|r" placeholder="${ph[1]||String(reps).split("-")[0]}" value="${v.r??""}"><button class="done" data-done="${esc(n)}|${j}" aria-pressed="${!!v.d}" aria-label="تمت المجموعة">✓</button>`}).join("")}</div>${i<s.ex.length-1?`<button class="ghost ex-next" data-exo="${i+1}">التمرين الجاي ‹</button>`:""}</div>`}).join("")}
   </div>
-  <button class="primary" id="finish">خلصت التمرين</button>`;
+  <button class="primary" id="finish">خلصت التمرين</button>
+  <div class="tr-more"><button class="ed-add" id="openEdit">عدّل الجدول</button></div>
+  <details class="card flat tr-guide"><summary>طريقة التمرين في FORMA ‹</summary><ul class="guide" style="margin-top:8px">
+    <li>اكتب الوزن والعدات لكل مجموعة. الخانة الفاضية تاخذ رقم المرة الماضية، فإذا كررته اضغط ✓ بس.</li>
+    <li>وقّف قبل الفشل بعدة أو عدتين. آخر مجموعة في تمارين العزل كمّلها للفشل.</li>
+    <li>إذا وصلت أعلى العدات في كل المجموعات، يطلع لك "زد الوزن" المرة الجاية.</li>
+    <li>الجهاز مشغول؟ اضغط "بدّل" واختر بديل.</li><li>تبي تغيّر التمارين أو المجموعات أو العدات؟ اضغط "عدّل الجدول".</li></ul></details>`;
 }
 function openSwap(i){
   const si=sessIdx(),orig=prog().sessions[si].ex[i][0],cur=exName(si,i),opts=[orig,...(ALTS[orig]||[])];
   sheet((sh,close)=>{
     sh.setAttribute("aria-label","بدّل التمرين");
-    sh.innerHTML=`<div class="grab"></div><h2>بدّل التمرين</h2><p class="note" style="margin:2px 0 10px">التبديل يثبت لهذي الجلسة في كل الأسابيع الجاية.</p><div class="seg" style="grid-template-columns:1fr">${opts.map(o=>`<button data-alt="${esc(o)}" aria-pressed="${o===cur}" dir="ltr" class="num">${esc(o)}${o===orig?' <small dir="rtl">الأساسي</small>':""}</button>`).join("")}</div>`;
+    sh.innerHTML=`<div class="grab"></div><h2>بدّل التمرين</h2><p class="note" style="margin:2px 0 10px">التبديل يثبت لهذي الجلسة في كل الأسابيع الجاية.</p><div class="seg" style="grid-template-columns:1fr">${opts.map(o=>`<button data-alt="${esc(o)}" aria-pressed="${o===cur}" dir="ltr" class="num">${esc(o)}${o===orig?' <small dir="rtl">الأساسي</small>':""}${arN(o)?`<span class="ex-ar" dir="rtl">${arN(o)}</span>`:""}</button>`).join("")}</div>`;
     sh.addEventListener("click",e=>{const b=e.target.closest("[data-alt]");if(!b)return;const sw=S.swaps[S.prog]=S.swaps[S.prog]||{};if(b.dataset.alt===orig)delete sw[si+"|"+i];else sw[si+"|"+i]=b.dataset.alt;save();close();render()});
   });
 }
+const arN=n=>(window.FORMA_AR||{})[n]||"";
 const clockSince=t=>{const s=Math.max(0,Math.floor((Date.now()-t)/1000)),m=Math.floor(s/60);return m>=60?Math.floor(m/60)+":"+pad(m%60)+":"+pad(s%60):m+":"+pad(s%60)};
 /* الراحة: التمارين الثقيلة أطول */
 const restFor=reps=>{const top=+String(reps).split("-").pop()||10;return top<=8?150:top<=12?120:90};
@@ -871,13 +932,13 @@ function vProgress(){
     const X=i=>L+i*(W-L-10)/(ws.length-1),Y=v=>12+(mx-v)*(H-44)/(mx-mn);
     const avg=ws.map((w,i)=>{const sl=vals.slice(Math.max(0,i-6),i+1);return [X(i),Y(sl.reduce((a,b)=>a+b,0)/sl.length)]});
     const ticks=[mn,(mn+mx)/2,mx];
-    chart=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:260px" role="img" aria-label="رسم الوزن">
+    chart=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:260px;direction:ltr" role="img" aria-label="رسم الوزن">
       ${ticks.map(t=>`<line x1="${L}" x2="${W-10}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t.toFixed(1)}</text>`).join("")}
       ${tv?`<line x1="${L}" x2="${W-10}" y1="${Y(tv)}" y2="${Y(tv)}" stroke="var(--hot)" stroke-dasharray="4 4"/><text x="${W-10}" y="${Y(tv)-5}" text-anchor="end" style="fill:var(--hot)">هدفك ${tv}</text>`:""}
       ${ws.map((w,i)=>`<circle cx="${X(i)}" cy="${Y(w[1])}" r="2.6" fill="var(--muted)" opacity=".55"/>`).join("")}
       <polyline points="${avg.map(a=>a.join(",")).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="${avg[avg.length-1][0]}" cy="${avg[avg.length-1][1]}" r="5" fill="var(--accent)"/>
-      <text x="${L}" y="${H-10}">${dateAr(ws[0][0])}</text><text x="${W-10}" y="${H-10}" text-anchor="end">${dateAr(ws[ws.length-1][0])}</text></svg></div>
+      <text x="${L}" y="${H-10}">\u2067${dateAr(ws[0][0])}\u2069</text><text x="${W-10}" y="${H-10}" text-anchor="end">\u2067${dateAr(ws[ws.length-1][0])}\u2069</text></svg></div>
       <div class="legend"><span><b style="background:var(--accent)"></b>متوسط 7 أيام</span><span><b style="background:var(--muted)"></b>وزنك اليومي</span></div>`;
   }
   let eta="";
@@ -887,15 +948,22 @@ function vProgress(){
   const lifts={};S.history.forEach(h=>Object.entries(h.sets||{}).forEach(([n,ss])=>ss.forEach(s=>{if(!lifts[n]||s[0]>lifts[n])lifts[n]=s[0]})));
   const top=Object.entries(lifts).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const wkTrain=S.history.filter(h=>daysBetween(h.date,today())<7).length;
-  return `<div class="row"><div><h1>تقدمي</h1><div class="sub">من ${dateAr(p.start||today())}</div></div><button class="shareb" id="shareP">${ICON.share} شارك</button></div>
-  <div class="stats"><div class="stat"><b class="num">${r1(cw)}</b><span>وزنك الحالي</span></div><div class="stat"><b class="num">${tr?(tr.kgWeek>0?"+":"")+r1(tr.kgWeek):"-"}</b><span>كغ بالأسبوع</span></div><div class="stat"><b class="num">${G().bmi}</b><span>مؤشر الكتلة</span></div></div>
+  const nW=weightsSorted().length,nT=S.history.length,nF=Object.values(S.days).filter(d=>(d.food||[]).length).length,anyDay=cells.some(c=>/class="[wf]/.test(c));
+  const fresh=nW<2&&!nT&&nF<3;
+  const stp=(ok,t,sub)=>`<li class="${ok?"ok":""}"><span class="st-c" aria-hidden="true">${ok?"✓":""}</span><span><b>${t}</b><small>${sub}</small></span></li>`;
+  const starter=fresh?`<div class="card starter"><h2>صفحتك تكبر معك</h2><p class="sub">كل ما سجلت أكثر، تطلع لك هنا الرسمة وأرقامك وموعد وصولك لهدفك.</p>
+    <ol class="st-list">${stp(nW>=2,"سجّل وزنك يومين",`${Math.min(nW,2)} من 2 · من الرئيسية`)}${stp(nT>0,"خلّص أول تمرين","أرقامك القوية تطلع هنا")}${stp(nF>=3,"سجّل أكلك 3 أيام",`${Math.min(nF,3)} من 3`)}</ol>
+    ${(()=>{const nx=nW<2&&!S.days[today()]?.weight?["today","سجّل وزنك"]:!nT?["train","ابدأ التمرين"]:nF<3?["food","سجّل أكلك"]:["today","سجّل وزنك"];return `<button class="primary wide" data-go="${nx[0]}">${nx[1]}</button>`})()}</div>`:"";
+  return `<div class="row"><div><h1>تقدمي</h1><div class="sub">من ${dateAr(p.start||today())}</div></div>${fresh?"":`<button class="shareb" id="shareP">${ICON.share} شارك</button>`}</div>
+  ${starter}
+  <div class="stats"><div class="stat"><b class="num">${r1(cw)}</b><span>وزنك الحالي</span></div><div class="stat"><b class="num ${tr?"":"soon"}">${tr?(tr.kgWeek>0?"+":"")+r1(tr.kgWeek):"بعد أسبوع"}</b><span>كغ بالأسبوع</span></div><div class="stat"><b class="num">${G().bmi}</b><span>مؤشر الكتلة</span></div></div>
   ${p.tw?`<div class="card stack"><div class="row"><h2>هدفك ${p.tw} كغ</h2><span class="pill">${Math.round(pct)}%</span></div><div class="progress"><i style="width:${pct}%"></i></div><div class="row sub"><span>بدأت ${startW}</span><span>${eta?`توصل ${eta}`:"نحسب موعد وصولك بعد أسبوعين وزن"}</span></div></div>`:""}
-  <div class="card"><h2 style="margin-bottom:8px">الوزن</h2>${chart}</div>
-  <div class="card"><div class="row"><h2>آخر 4 أسابيع</h2><span class="pill">${streak()} يوم متتالي</span></div>
+  ${fresh&&nW<2?"":`<div class="card"><h2 style="margin-bottom:8px">الوزن</h2>${chart}</div>`}
+  ${!anyDay?"":`<div class="card"><div class="row"><h2>آخر 4 أسابيع</h2><span class="pill">${streak()} يوم متتالي</span></div>
     <div class="grid28" style="margin-top:12px">${cells.join("")}</div>
     <div class="legend"><span><b style="background:var(--accent)"></b>تمرّنت</span><span><b style="background:color-mix(in srgb,var(--accent) 40%,var(--track))"></b>سجلت أكل</span><span><b style="background:var(--track)"></b>ما سجلت</span></div>
-    <p class="note" style="margin-top:8px">تمارين هالأسبوع: ${wkTrain} من ${prog().days}</p></div>
-  <div class="card"><h2>أقوى أرقامك</h2><div class="list">${top.length?top.map(([n,kg])=>`<button class="item" data-hist="${esc(n)}"><span class="n num" dir="ltr" style="text-align:right">${esc(n)}</span><span class="m">${kg} كغ</span><span class="plus" aria-hidden="true">‹</span></button>`).join(""):`<div class="empty">أول تمرين تخلصه يطلع هنا.</div>`}</div></div>`;
+    <p class="note" style="margin-top:8px">تمارين هالأسبوع: ${wkTrain} من ${prog().days}</p></div>`}
+  ${!top.length&&fresh?"":`<div class="card"><h2>أقوى أرقامك</h2><div class="list">${top.length?top.map(([n,kg])=>`<button class="item" data-hist="${esc(n)}"><span class="n num" dir="ltr" style="text-align:right">${esc(n)}</span><span class="m">${kg} كغ</span><span class="plus" aria-hidden="true">‹</span></button>`).join(""):`<div class="empty">أول تمرين تخلصه يطلع هنا.</div>`}</div></div>`}`;
 }
 
 /* ===== الإعدادات ===== */
@@ -923,7 +991,7 @@ function vSettings(){
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
   <button class="danger" id="resetB">${resetArmed?"متأكد؟ اضغط مرة ثانية ويتمسح كل شي":"امسح كل بياناتي"}</button>
-  <p class="note center">FORMA 2.6 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
+  <p class="note center">FORMA 2.7 · للاستخدام الشخصي فقط. © 2026 FORMA</p>`;
 }
 function exportData(){
   const blob=new Blob([JSON.stringify(S)],{type:"application/json"});
@@ -953,7 +1021,7 @@ function render(){
   window.scrollTo(0,0);
 }
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
-document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today();q="";browse=false}render()}});
+document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;wEdit=false;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today();q="";browse=false}render()}});
 $("#gearB").addEventListener("click",()=>{tab="settings";ed=null;resetArmed=cycleArmed=false;render()});
 $("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup"){if(S.profile)submitSetup();else wizNext()}if(e.target.id==="sayF")openSay($("#sayIn").value)});
 $("#view").addEventListener("click",e=>{
@@ -996,10 +1064,14 @@ $("#view").addEventListener("click",e=>{
     case "edReset":return edReset();
     case "openSug":return openSug();
     case "openPlan":return openPlan();
+    case "instSkip":instSet("skip");return render();
+    case "instLater":instSet("later");return render();
+    case "instCopy":{const u=location.href.split("#")[0];(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("انتسخ الرابط. الصقه في المتصفح"),()=>toast(u));return}
     case "doInstall":if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.finally(()=>{deferredPrompt=null;render()})}return;
     case "rvApply":{const rv=weeklyReview();if(rv){S.adj+=rv.delta;S.lastReview=today();save();render();toast(`سعراتك الحين ${fmt(G().kcal)}`)}return}
     case "rvSkip":S.lastReview=today();save();return render();
-    case "wSave":{const v=parseFloat($("#wIn").value);if(v>=35&&v<=250){day(today()).weight=v;save();render();toast("انحفظ وزنك")}else toast("اكتب وزن صحيح بالكيلو");return}
+    case "wEdit":wEdit=true;render();{const w=$("#wIn");if(w)w.focus()}return;
+    case "wSave":{const v=parseFloat($("#wIn").value);if(v>=35&&v<=250){day(today()).weight=v;wEdit=false;save();render();toast("انحفظ وزنك")}else toast("اكتب وزن صحيح بالكيلو");return}
     case "prevD":foodDay=key(addDays(parseKey(foodDay),-1));return render();
     case "nextD":if(foodDay!==today()){foodDay=key(addDays(parseKey(foodDay),1));render()}return;
     case "quick":return openQuick({name:q.trim()&&q.trim().split(/\s+/).length<5?q.trim():""});
