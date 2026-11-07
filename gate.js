@@ -25,14 +25,16 @@
   ".fg h1{font-size:22px;margin:0}.fg p{margin:0;color:var(--muted,#5E6B66);font-size:14px;line-height:1.7}"+
   ".fg input{direction:ltr;text-align:center;letter-spacing:.08em;font-family:var(--display,system-ui);font-size:18px;text-transform:uppercase}"+
   ".fg .fg-err{color:var(--hot,#C8501F);font-weight:700;font-size:13px;min-height:20px}";
+  var box=null;
   function show(){
+    if(box){box.hidden=false;document.documentElement.style.overflow="hidden";return}
     var st=document.createElement("style");st.textContent=css;document.head.appendChild(st);
     var d=document.createElement("div");d.className="fg";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
     d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>فعّل فورما</h1><p>اكتب كود التفعيل اللي وصلك بعد الشراء.</p>'+
       '<input type="text" id="fgCode" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="FM-XXXXX-XXXXX" aria-label="كود التفعيل">'+
       '<button class="primary wide" type="submit">تفعيل</button><div class="fg-err" id="fgErr" aria-live="polite"></div>'+
       '<p>الكود يوصلك على إيميلك بعد الشراء من متجر فورما.</p></form>';
-    document.body.appendChild(d);document.documentElement.style.overflow="hidden";
+    box=d;document.body.appendChild(d);document.documentElement.style.overflow="hidden";
     var inp=d.querySelector("#fgCode"),err=d.querySelector("#fgErr"),btn=d.querySelector("button");
     try{var q=new URLSearchParams(location.search).get("code");if(q)inp.value=q}catch(e){}
     d.querySelector("form").addEventListener("submit",async function(e){
@@ -41,12 +43,21 @@
       btn.disabled=true;btn.textContent="لحظة...";
       try{
         var res=await activate(c);
-        if(res==="ok"){set(KEY,c);d.remove();document.documentElement.style.overflow="";return}
+        if(res==="ok"){set(KEY,c);if(mo)mo.disconnect();d.remove();box=null;document.documentElement.style.overflow="";return}
         err.textContent=MSG[res]||MSG.invalid;
       }catch(x){err.textContent=MSG.net}
       btn.disabled=false;btn.textContent="تفعيل";
     });
   }
-  function start(){if(!get(KEY))show()}
+  // لو شاشة التثبيت ظاهرة نخليه يثبت أول، والكود يطلع داخل التطبيق المثبت.
+  // لو ضغط «أكمل في المتصفح» تطلع شاشة الكود.
+  function hide(){if(box){box.hidden=true;document.documentElement.style.overflow=""}}
+  function check(){if(get(KEY))return;if(document.querySelector("#view .ins"))hide();else show()}
+  var mo=null;
+  function start(){
+    if(get(KEY))return;
+    check();
+    if(window.MutationObserver){mo=new MutationObserver(check);mo.observe(document.getElementById("view")||document.body,{childList:true,subtree:true})}
+  }
   if(document.body)start();else document.addEventListener("DOMContentLoaded",start);
 })();
