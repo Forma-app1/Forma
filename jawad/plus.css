@@ -5,8 +5,8 @@ button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9
 .scanbox{position:relative;margin-top:12px;border-radius:20px;overflow:hidden;background:#000;aspect-ratio:4/3}
 .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
 .scanframe{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
-.scanframe i{width:72%;height:34%;border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,.38);outline:3px solid #3DCB95;outline-offset:-3px;position:relative;overflow:hidden}
-.scanframe i::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:#3DCB95;box-shadow:0 0 12px #3DCB95;animation:scanline 1.6s ease-in-out infinite alternate}
+.scanframe i{width:72%;height:34%;border-radius:16px;box-shadow:0 0 0 2000px rgba(0,0,0,.38);outline:3px solid #5FD8CB;outline-offset:-3px;position:relative;overflow:hidden}
+.scanframe i::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:#5FD8CB;box-shadow:0 0 12px #5FD8CB;animation:scanline 1.6s ease-in-out infinite alternate}
 @keyframes scanline{to{top:calc(100% - 2px)}}
 .scanmsg{position:absolute;inset:auto 0 10px;text-align:center;color:#fff;font-weight:700;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 
@@ -176,15 +176,15 @@ a.btn.primary{background:var(--accent);color:var(--on-accent)}
 .ex-note{display:block;width:100%;margin-top:10px;font:inherit;font-size:16px;line-height:1.6;padding:10px 12px;border-radius:12px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--raise);color:var(--ink);resize:vertical;min-height:46px}
 .ex-note::placeholder{color:var(--muted)}
 .ex .last:empty{display:none}
-.meal-g{--mc:#0E7A5A;border-radius:16px;padding:8px 12px 4px;margin-top:10px;background:color-mix(in srgb,var(--mc) 8%,transparent);border-inline-start:4px solid var(--mc)}
+.meal-g{--mc:#0E7C80;border-radius:16px;padding:8px 12px 4px;margin-top:10px;background:color-mix(in srgb,var(--mc) 8%,transparent);border-inline-start:4px solid var(--mc)}
 .meal-g .item{border-bottom-color:color-mix(in srgb,var(--mc) 18%,var(--line))}
 .meal-g .meal-h h3{color:var(--mc)}
 .meal-g.m0{--mc:#D08A1E}
-.meal-g.m1{--mc:#0E7A5A}
+.meal-g.m1{--mc:#0E7C80}
 .meal-g.m2{--mc:#5B6CC9}
 .meal-g.m3{--mc:#C8501F}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .meal-g.m0{--mc:#F0B04A}:root:not([data-theme="light"]) .meal-g.m1{--mc:#3DCB95}:root:not([data-theme="light"]) .meal-g.m2{--mc:#8C9BF0}:root:not([data-theme="light"]) .meal-g.m3{--mc:#F07A4F}}
-:root[data-theme="dark"] .meal-g.m0{--mc:#F0B04A}:root[data-theme="dark"] .meal-g.m1{--mc:#3DCB95}:root[data-theme="dark"] .meal-g.m2{--mc:#8C9BF0}:root[data-theme="dark"] .meal-g.m3{--mc:#F07A4F}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .meal-g.m0{--mc:#F0B04A}:root:not([data-theme="light"]) .meal-g.m1{--mc:#4FD1C5}:root:not([data-theme="light"]) .meal-g.m2{--mc:#8C9BF0}:root:not([data-theme="light"]) .meal-g.m3{--mc:#F07A4F}}
+:root[data-theme="dark"] .meal-g.m0{--mc:#F0B04A}:root[data-theme="dark"] .meal-g.m1{--mc:#4FD1C5}:root[data-theme="dark"] .meal-g.m2{--mc:#8C9BF0}:root[data-theme="dark"] .meal-g.m3{--mc:#F07A4F}
 
 /* 3.0: إحساس تطبيق */
 html{-webkit-tap-highlight-color:transparent}
@@ -251,3 +251,17 @@ nav button:active{transform:scale(.92)}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:conf 1.7s cubic-bezier(.25,.6,.4,1) forwards}
 @keyframes conf{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--x),105vh) rotate(var(--r));opacity:.9}}
+
+/* 3.1: هوية FORMA الجديدة (Neural Black, Deep Signal, Cognitive Slate, Neural Mist, Synapse White) */
+:root{--bg:#EEF3F2;--surface:#FFFFFF;--raise:#F4F8F7;--ink:#0E1C21;--muted:#56707A;--line:#D3E0DF;
+  --accent:#0E7C80;--accent-ink:#0A5E62;--accent-soft:#D8EEEC;--on-accent:#FFFFFF;
+  --hot:#D9662E;--hot-soft:#FBE6DA;--track:#DCE7E6;--slab:#162329;--on-slab:#DBEAE5;--slab-muted:#8DA9AD;--slab-accent:#5FD8CB}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#03080A;--surface:#0D181D;--raise:#122128;--ink:#DBEAE5;--muted:#8DA9AD;--line:#1C2E35;
+  --accent:#4FD1C5;--accent-ink:#7FE3D8;--accent-soft:#10302F;--on-accent:#03140F;
+  --hot:#F08A5D;--hot-soft:#3A2218;--track:#18282E;--slab:#162329;--on-slab:#DBEAE5;--slab-muted:#8DA9AD;--slab-accent:#5FD8CB}}
+:root[data-theme="dark"]{--bg:#03080A;--surface:#0D181D;--raise:#122128;--ink:#DBEAE5;--muted:#8DA9AD;--line:#1C2E35;
+  --accent:#4FD1C5;--accent-ink:#7FE3D8;--accent-soft:#10302F;--on-accent:#03140F;
+  --hot:#F08A5D;--hot-soft:#3A2218;--track:#18282E;--slab:#162329;--on-slab:#DBEAE5;--slab-muted:#8DA9AD;--slab-accent:#5FD8CB}
+.hero{background:radial-gradient(130% 110% at 100% 0%,#3D616D 0%,#162329 48%,#010101 100%)}
+.logo .wm{height:15px;color:var(--ink)}
+.welcome .logo .wm{height:22px}
