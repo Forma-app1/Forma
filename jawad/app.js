@@ -592,7 +592,9 @@ function openQuick(pre){
 /* ===== تصوير الأكل =====
    الصورة تتصغر في الجهاز، وتروح لـ Claude عبر Supabase (food-photo)، وترجع أصناف قابلة للتعديل */
 const PHOTO_ERR={nolic:"تصوير الأكل يحتاج كود التفعيل. اربطه من ملفي",limit:"خلصت محاولات التصوير اليوم. ترجع بكرة",nokey:"تصوير الأكل يتجهز، جرّبه بعد شوي",net:"تأكد إنك متصل بالنت وجرّب مرة ثانية",bad:"الصورة ما وصلت صح. جرّب مرة ثانية",ai:"ما قدرنا نقرأ الصورة. جرّب صورة أوضح",server:"صار خطأ عندنا. جرّب بعد شوي"};
+const PHOTO_READY=false; /* خله true بعد ما ينحط مفتاح Claude في Supabase */
 async function openPhoto(){
+  if(!PHOTO_READY)return sheet((sh,close)=>{sh.innerHTML=`<div class="grab"></div><h2>صوّر أكلك</h2><p class="note" style="margin:6px 0 14px">معليش، الميزة ما جهزت للحين. قريب بإذن الله تصوّر صحنك وFORMA يحسب سعراته.</p><button class="primary wide" id="phOk">تمام</button>`;sh.querySelector("#phOk").onclick=close});
   if(!CL)return toast("حدّث الصفحة وجرّب");
   if(!CL.code())return sheet((sh,close)=>{sh.innerHTML=`<div class="grab"></div><h2>صوّر أكلك</h2><p class="note" style="margin:4px 0 14px">صوّر صحنك وFORMA يقدّر سعراته وبروتينه. الميزة تحتاج كود التفعيل عشان نحمي الخدمة.</p><button class="primary wide" id="phLink">اربط كودي</button>`;
     sh.querySelector("#phLink").onclick=()=>{close();tab="settings";render();setTimeout(()=>{const i=$("#licIn");if(i){i.scrollIntoView({block:"center"});i.focus()}},60)}});
