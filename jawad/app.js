@@ -53,6 +53,7 @@ mic:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" hei
 scan:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 8v8M11 8v8M13.5 8v8M16 8v8"/></svg>',
 chart:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="M6 15.5l4-5 3 3 5-6.5"/></svg>',
 share:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M6 12v6.5A1.5 1.5 0 0 0 7.5 20h9a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>',
+search:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>',
 camera:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg>',
 spark:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
 gear:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'
@@ -397,25 +398,23 @@ function vToday(){
     if(ik==="prompt")install=`<div class="card install row"><div><h2>ثبّت FORMA</h2><div class="sub">يفتح بشاشة كاملة ويشتغل بدون نت</div></div><button class="primary" id="doInstall">ثبّت</button></div>`;
     else install=`<div class="card install"><div class="row"><h2>ثبّت FORMA على شاشتك</h2><button type="button" class="ins-x" id="instLater" aria-label="لاحقاً">×</button></div>${instSteps(ik)}${isIOS&&ik!=="inapp"?`<p class="note">بياناتك هنا ما تنتقل للتطبيق لحالها. خذ «نسخة احتياطية» من ملفك، واسترجعها بعد ما تفتح التطبيق.</p>`:""}</div>`;
   }
-  const mac=(cls,name,v,goal)=>`<div class="mac ${cls}"><div class="v">${fmt(v)}<span> / ${goal} ${name}</span></div><div class="mbar"><i style="width:${clamp(v/goal*100,0,100)}%"></i></div></div>`;
+  const ring=(p,cls,inner)=>`<div class="ring ${cls}" style="--p:${p.toFixed(3)}"><div>${inner}</div></div>`;
+  const mr=(cls,name,v,goal)=>`<div class="mring ${cls}">${ring(clamp(v/goal,0,1),"sm",`<b class="num">${fmt(v)}</b>`)}<span>${name} <i class="num">/ ${goal}</i></span></div>`;
+  const tr=S.days[T]?.trained,pl=clamp(progDone()/progTotal()*100,0,100);
   return `
-  <div><h1>${greet} ${esc(S.profile.name)}</h1><div class="sub">${st?`${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض. خلها تكمل.`:"سجّل أول وجبة اليوم وابدأ سلسلتك."}</div></div>
+  <div class="th"><span class="sub">${dateAr(T)}${st?` · <b class="hotc">${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض</b>`:""}</span><h1>${greet} ${esc(S.profile.name)}</h1></div>
   ${install}
-  <div class="hero">
-    <div class="row"><span class="lbl">${over?"زيادة عن هدفك":"باقي لك اليوم"}</span><span class="lbl num">${fmt(t.k)} / ${fmt(g.kcal)}</span></div>
-    <div class="big ${over?"over":""}">${fmt(Math.abs(left))}<small>سعرة</small></div>
-    <div class="meter"><i class="${over?"over":""}" style="width:${clamp(t.k/g.kcal*100,0,100)}%"></i></div>
-    <div class="macros">${mac("p","بروتين",t.p,g.p)}${mac("c","كارب",t.c,g.c)}${mac("f","دهون",t.f,g.f)}</div>
-    <div class="grid2"><button class="primary" data-go="food">سجّل أكلك</button><button class="light" id="openSug">وش آكل؟</button></div>
+  <div class="card hero2">
+    <div class="h2-top">${ring(clamp(t.k/g.kcal,0,1),"lg"+(over?" over":""),`<b class="num">${fmt(Math.abs(left))}</b><span>${over?"سعرة زيادة":"سعرة باقية"}</span>`)}
+      <div class="h2-st"><div><span>هدفك</span><b class="num">${fmt(g.kcal)}</b></div><div><span>أكلت</span><b class="num">${fmt(t.k)}</b></div><div><span>باقي بروتين</span><b class="num acc">${fmt(Math.max(0,g.p-t.p))} <small>جم</small></b></div></div></div>
+    <div class="h2-m">${mr("p","بروتين",t.p,g.p)}${mr("c","كارب",t.c,g.c)}${mr("f","دهون",t.f,g.f)}</div>
+    <button class="ghost h2-sug" id="openSug">وش آكل الحين؟ ‹</button>
   </div>
   ${quickActs()}
+  <div class="wo"><div class="wo-l"><span class="lbl">تمرين اليوم · ${esc(P.ar)}</span><b dir="auto">${esc(sName(nx.n))}</b><span class="sub">${nx.ex.length} تمارين${nx.day?" · "+nx.day:""}</span><div class="wo-p" title="تقدمك في البرنامج"><i style="width:${pl}%"></i></div></div>
+    ${tr?`<span class="pill">تمرّنت اليوم ✓</span>`:`<button class="wo-go" data-go="train">ابدأ</button>`}</div>
   ${coachCard()}
   ${rv?`<div class="card review stack"><div class="row"><h2>مراجعة الأسبوع</h2><span class="pill ${rv.delta?"hot":""}">${rv.delta?(rv.delta>0?"+":"")+rv.delta+" سعرة":"على المسار"}</span></div><p class="note" style="color:var(--ink);font-size:14px">${rv.msg}</p>${rv.delta?`<div class="grid2"><button class="primary" id="rvApply">طبّق التعديل</button><button id="rvSkip">خله زي ما هو</button></div>`:`<button id="rvSkip">تمام</button>`}</div>`:""}
-  <div class="card nx">
-    <div class="row"><div class="nx-l"><span class="lbl">تمرينك الجاي · ${esc(P.ar)}</span><div class="nx-t"><b class="num" dir="auto">${esc(sName(nx.n))}</b><span class="sub">${nx.ex.length} تمارين${nx.day?" · "+nx.day:""}</span></div></div>
-    ${S.days[T]?.trained?`<span class="pill">تمرّنت اليوم ✓</span>`:`<button class="ink nx-go" data-go="train">ابدأ</button>`}</div>
-    <div class="nx-p"><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div><span class="sub num">${Math.min(progDone()+1,progTotal())}/${progTotal()}</span></div>
-  </div>
   ${S.days[T]?.weight&&!wEdit?`<div class="card wrow"><div><span class="lbl">وزن اليوم</span><div class="nx-t"><b class="num">${r1(S.days[T].weight)} <small>كغ</small></b>${trend()?`<span class="sub">متوسط الأسبوع ${r1(trend().avg)}</span>`:""}</div></div><button class="ghost" id="wEdit">عدّل</button></div>`
   :`<div class="card stack wcard"><div class="row"><h2>وزن اليوم</h2><span class="sub">الصبح، قبل الأكل</span></div>
     <div class="row"><input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${S.days[T]?.weight??""}"><button class="primary" id="wSave">حفظ</button></div></div>`}`;
@@ -423,7 +422,7 @@ function vToday(){
 const tipBase=()=>{const d=new Date();return (d.getDate()+d.getMonth()*31)%TIPS.length};
 let tipShift=0,lastSug=[];
 /* أزرار التصوير والباركود: بارزة في الرئيسية وصفحة الأكل */
-const quickActs=()=>`<div class="qacts"><button class="qact" id="photoB">${ICON.camera}<span><b>صوّر أكلك</b><small>FORMA يحسب سعراته</small></span></button><button class="qact" id="scanB">${ICON.scan}<span><b>امسح الباركود</b><small>للمنتجات المغلفة</small></span></button></div>`;
+const quickActs=(food)=>`<div class="qa4"><button id="photoB">${ICON.camera}<span>صوّر أكلك</span></button><button id="scanB">${ICON.scan}<span>باركود</span></button>${food?"":`<button id="qSay">${ICON.mic}<span>تكلم</span></button><button id="qSearch">${ICON.search}<span>ابحث</span></button>`}</div>`;
 
 /* ===== نصايح فورما ===== */
 function coachCtx(){
@@ -449,8 +448,9 @@ function coachCard(){
   let list;try{list=COACH.tips(coachCtx()).slice(0,4)}catch(e){return ""}
   if(!list.length)return "";
   const t=list[coachIdx%list.length],a=t.act&&COACH_ACT[t.act];
-  return `<div class="card coach" id="coach"><div class="row"><span class="lbl coach-l">${ICON.spark} نصيحة فورما</span>${list.length>1?`<button class="ghost coach-n" id="coachNext" aria-label="النصيحة الثانية">${coachIdx%list.length+1}/${list.length} ‹</button>`:""}</div>
-    <p class="coach-t">${esc(t.t)}</p>${a?`<button class="coach-a" data-coach="${a[1]}">${a[0]}</button>`:""}</div>`;
+  const av=(document.querySelector("#hdr .mk")||{}).outerHTML||"";
+  return `<div class="card coach" id="coach"><div class="coach-av" aria-hidden="true">${av}</div><div class="coach-b"><div class="row"><span class="lbl coach-l">فورما يقول</span>${list.length>1?`<button class="ghost coach-n" id="coachNext" aria-label="النصيحة الثانية">${coachIdx%list.length+1}/${list.length} ‹</button>`:""}</div>
+    <p class="coach-t">${esc(t.t)}</p>${a?`<button class="coach-a" data-coach="${a[1]}">${a[0]}</button>`:""}</div></div>`;
 }
 
 /* ===== الأكل ===== */
@@ -478,7 +478,7 @@ function vFood(){
     <input type="text" id="sayIn" enterkeyhint="done" placeholder="وش أكلت؟ مثال: 3 بيض وخبزة" dir="auto" aria-label="اكتب وش أكلت أو ابحث" value="${esc(q)}">
     ${SR?`<button type="button" id="sayMic" class="fin-b" aria-label="تكلم">${ICON.mic}</button>`:""}
   </form>
-  ${quickActs()}
+  ${quickActs(true)}
   <div id="results"></div>
   <div class="card stack flog">
     <div class="row"><h2>${foodDay===today()?"أكلك اليوم":"أكل "+label}</h2><span class="sub num">${fmt(t.k)} سعرة</span></div>
@@ -1156,7 +1156,24 @@ function render(){
   window.scrollTo(0,0);
 }
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
-document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b){tab=b.dataset.tab;ed=null;wEdit=false;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today();q="";browse=false}render()}});
+/* زر + في نص الشريط */
+(()=>{const n=document.querySelector("nav .in");if(!n||n.querySelector(".fab"))return;const f=document.createElement("button");f.className="fab";f.id="fabAdd";f.setAttribute("aria-label","أضف");f.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';n.insertBefore(f,n.children[2])})();
+function openAdd(){
+  sheet((sh,close)=>{sh.setAttribute("aria-label","أضف");
+    sh.innerHTML=`<div class="grab"></div><h2>وش تبي تضيف؟</h2><div class="addg">
+      <button data-a="photo">${ICON.camera}<b>صوّر أكلك</b><small>FORMA يحسب سعراته</small></button>
+      <button data-a="scan">${ICON.scan}<b>امسح باركود</b><small>للمنتجات المغلفة</small></button>
+      <button data-a="type">${ICON.search}<b>اكتب أو تكلم</b><small>مثال: 3 بيض وخبزة</small></button>
+      <button data-a="weight">${ICON.chart}<b>سجّل وزنك</b><small>الصبح قبل الأكل</small></button>
+      <button data-a="train" class="wide"><b>ابدأ تمرين اليوم</b><small dir="auto">${esc(sName(prog().sessions[sessIdx()].n))}</small></button></div>`;
+    sh.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;close();
+      if(a==="photo")return openPhoto();if(a==="scan")return openScan();
+      if(a==="type"){tab="food";foodDay=today();q="";render();const i=$("#sayIn");if(i)i.focus();return}
+      if(a==="weight"){tab="today";wEdit=true;render();const w=$("#wIn");if(w){w.scrollIntoView({block:"center"});w.focus()}return}
+      if(a==="train"){tab="train";render()}});
+  });
+}
+document.querySelector("nav").addEventListener("click",e=>{const b=e.target.closest("button");if(b&&b.id==="fabAdd"){PF.haptic("light");return openAdd()}if(b){tab=b.dataset.tab;ed=null;wEdit=false;resetArmed=cycleArmed=false;if(tab==="food"){foodDay=today();q="";browse=false}render()}});
 $("#gearB").addEventListener("click",()=>{tab="settings";ed=null;resetArmed=cycleArmed=false;render()});
 $("#view").addEventListener("submit",e=>{e.preventDefault();if(e.target.id==="setup"){if(S.profile)submitSetup();else wizNext()}if(e.target.id==="sayF")openSay($("#sayIn").value)});
 $("#view").addEventListener("click",e=>{
@@ -1216,6 +1233,8 @@ $("#view").addEventListener("click",e=>{
     case "browseB":browse=!browse;cat=browse?"مطاعم":cat;restPick="";render();if(browse){const r=$("#results");if(r)window.scrollTo({top:r.getBoundingClientRect().top+window.scrollY-200})}return;
     case "scanB":return openScan();
     case "photoB":return openPhoto();
+    case "qSay":{tab="food";foodDay=today();q="";render();const m=$("#sayMic");if(m)listen(m);else{const i=$("#sayIn");if(i)i.focus()}return}
+    case "qSearch":{tab="food";foodDay=today();q="";render();const i=$("#sayIn");if(i)i.focus();return}
     case "coachNext":{coachIdx++;const c=$("#coach");if(c){const tmp=document.createElement("div");tmp.innerHTML=coachCard();c.replaceWith(tmp.firstElementChild)}PF.haptic("light");return}
     case "planProg":return openProgPick();
     case "licGo":return linkCode();
