@@ -1184,7 +1184,7 @@ $("#view").addEventListener("click",e=>{
     if(v.d){if(!live.start)live.start=Date.now();const last=lastFor(n),ph=last&&last[j];const reps=i>=0?ex[i][2]:"8";
       if(!v.kg&&ph)v.kg=String(ph[0]);if(!v.r)v.r=String(ph?ph[1]:String(reps).split("-")[0]);
       startRest(restFor(reps));PF.haptic("light");
-      const best=bestFor(n);live.prs=live.prs||{};if(best&&+v.kg>best&&!live.prs[n]){live.prs[n]=1;celebrate(`رقم قياسي جديد! ${n} ${v.kg} كغ`)}
+      const best=bestFor(n);live.prs=live.prs||{};if(best&&+v.kg>best&&!live.prs[n]){live.prs[n]=1;celebrate(`رقم قياسي جديد! \u2068${n}\u2069 ${v.kg} كغ`)}
       const sets=i>=0?ex[i][1]:0;let all=true;for(let x=0;x<sets;x++)if(!(live.v[n+"|"+x]&&live.v[n+"|"+x].d))all=false;
       if(all&&i>=0){const nxt=ex.findIndex((e,x)=>{if(x<=i)return false;const nn=exName(si,x);for(let y=0;y<e[1];y++)if(!(live.v[nn+"|"+y]&&live.v[nn+"|"+y].d))return true;return false});
         if(nxt>=0){live.open=nxt;renderTrainAt();return}}}
