@@ -171,3 +171,83 @@ a.btn.primary{background:var(--accent);color:var(--on-accent)}
 .st-c{flex:0 0 28px;height:28px;border-radius:99px;border:2px solid var(--line);display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--on-accent)}
 .st-list li.ok .st-c{background:var(--accent);border-color:var(--accent)}
 .st-list li.ok b{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+
+/* 2.7.3: ملاحظات التمارين، وألوان الوجبات */
+.ex-note{display:block;width:100%;margin-top:10px;font:inherit;font-size:16px;line-height:1.6;padding:10px 12px;border-radius:12px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--raise);color:var(--ink);resize:vertical;min-height:46px}
+.ex-note::placeholder{color:var(--muted)}
+.ex .last:empty{display:none}
+.meal-g{--mc:#0E7A5A;border-radius:16px;padding:8px 12px 4px;margin-top:10px;background:color-mix(in srgb,var(--mc) 8%,transparent);border-inline-start:4px solid var(--mc)}
+.meal-g .item{border-bottom-color:color-mix(in srgb,var(--mc) 18%,var(--line))}
+.meal-g .meal-h h3{color:var(--mc)}
+.meal-g.m0{--mc:#D08A1E}
+.meal-g.m1{--mc:#0E7A5A}
+.meal-g.m2{--mc:#5B6CC9}
+.meal-g.m3{--mc:#C8501F}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .meal-g.m0{--mc:#F0B04A}:root:not([data-theme="light"]) .meal-g.m1{--mc:#3DCB95}:root:not([data-theme="light"]) .meal-g.m2{--mc:#8C9BF0}:root:not([data-theme="light"]) .meal-g.m3{--mc:#F07A4F}}
+:root[data-theme="dark"] .meal-g.m0{--mc:#F0B04A}:root[data-theme="dark"] .meal-g.m1{--mc:#3DCB95}:root[data-theme="dark"] .meal-g.m2{--mc:#8C9BF0}:root[data-theme="dark"] .meal-g.m3{--mc:#F07A4F}
+
+/* 3.0: إحساس تطبيق */
+html{-webkit-tap-highlight-color:transparent}
+button,.qact,.chip{touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .12s ease,filter .12s ease}
+button:active:not(:disabled){transform:scale(.97);filter:brightness(.96)}
+nav button:active{transform:scale(.92)}
+#view.vin>*{animation:vin .26s cubic-bezier(.2,.8,.2,1) both}
+#view.vin>*:nth-child(2){animation-delay:.03s}#view.vin>*:nth-child(3){animation-delay:.06s}#view.vin>*:nth-child(n+4){animation-delay:.09s}
+@keyframes vin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sheet{animation:shup .3s cubic-bezier(.2,.85,.25,1) both;transition:transform .2s ease;overscroll-behavior:contain}
+.sheet-bg{animation:bgin .25s ease both}
+@keyframes shup{from{transform:translateY(100%)}to{transform:none}}
+@keyframes bgin{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){#view.vin>*,.sheet,.sheet-bg{animation:none}}
+
+/* أزرار التصوير والباركود */
+.qacts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qact{display:flex;align-items:center;gap:10px;padding:13px 12px;border-radius:18px;background:var(--surface);color:var(--ink);text-align:right;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--accent) 35%,var(--line)) inset}
+.qact svg{flex:none;width:30px;height:30px;padding:6px;border-radius:10px;background:var(--accent);stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;box-sizing:content-box}
+.qact span{display:flex;flex-direction:column;min-width:0}
+.qact b{font-size:14.5px}
+.qact small{font-size:11.5px;color:var(--muted);font-weight:400;margin-top:2px}
+
+/* نصيحة فورما */
+.coach{background:color-mix(in srgb,var(--accent) 7%,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,var(--line)) inset}
+.coach-l{display:inline-flex;align-items:center;gap:6px;color:var(--accent)}
+.coach-l svg{width:16px;height:16px;fill:currentColor}
+.coach-n{padding:4px 6px;font-size:12px;color:var(--muted)}
+.coach-t{margin:8px 0 0;font-size:15.5px;line-height:1.8;color:var(--ink)}
+.coach-a{margin-top:12px;width:100%}
+
+/* التمرين */
+.ex-c small .up{color:var(--accent);font-weight:800}
+.ex-note{min-height:42px;font-size:15px;padding:9px 12px;resize:none;overflow:hidden}
+
+/* تصوير الأكل */
+.ph-img{position:relative;border-radius:18px;overflow:hidden;margin-top:6px;max-height:46vh}
+.ph-img img{display:block;width:100%;max-height:46vh;object-fit:cover}
+.ph-scan{position:absolute;inset:0;background:linear-gradient(180deg,transparent 0,color-mix(in srgb,var(--accent) 55%,transparent) 48%,transparent 52%);background-size:100% 220%;animation:phs 1.4s ease-in-out infinite alternate}
+@keyframes phs{from{background-position:0 100%}to{background-position:0 0}}
+.ph-top{display:flex;gap:12px;align-items:center;margin-top:4px}
+.ph-top img{width:84px;height:84px;object-fit:cover;border-radius:16px;flex:none}
+.ph-top h2{font-size:22px;margin:0 0 4px}
+.ph-top .pill{margin-top:6px}
+.ph-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:14px;background:var(--raise);box-shadow:0 0 0 1px var(--line) inset}
+.ph-n{flex:1;min-width:0;display:flex;flex-direction:column}
+.ph-n b{font-size:14.5px}
+.ph-n small{font-size:12px;color:var(--muted)}
+.ph-g{display:flex;align-items:center;gap:4px;flex:none}
+.ph-g input{width:74px;text-align:center;padding:8px 6px}
+.ph-g span{font-size:12px;color:var(--muted)}
+
+/* الكود والسحابة */
+.lic-in{flex:1;min-width:0;text-align:center;letter-spacing:.06em;font-family:var(--display);text-transform:uppercase}
+
+/* ملخص الأسبوع */
+.wk-g{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wk-g div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:14px;background:var(--raise);text-align:center}
+.wk-g b{font-size:18px;font-family:var(--display)}
+.wk-g b.ok{color:var(--accent)}
+.wk-g span{font-size:11px;color:var(--muted);line-height:1.3}
+
+/* احتفال الرقم القياسي */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:conf 1.7s cubic-bezier(.25,.6,.4,1) forwards}
+@keyframes conf{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--x),105vh) rotate(var(--r));opacity:.9}}
