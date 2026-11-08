@@ -33,7 +33,7 @@
     d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>فعّل فورما</h1><p>اكتب كود التفعيل اللي وصلك بعد الشراء.</p>'+
       '<input type="text" id="fgCode" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="FM-XXXXX-XXXXX" aria-label="كود التفعيل">'+
       '<button class="primary wide" type="submit">تفعيل</button><div class="fg-err" id="fgErr" aria-live="polite"></div>'+
-      '<p>الكود يوصلك على إيميلك بعد الشراء من متجر فورما.</p></form>';
+      '<p>الكود يوصلك على الواتساب أو الإيميل بعد الشراء من متجر فورما.</p></form>';
     box=d;document.body.appendChild(d);document.documentElement.style.overflow="hidden";
     var inp=d.querySelector("#fgCode"),err=d.querySelector("#fgErr"),btn=d.querySelector("button");
     try{var q=new URLSearchParams(location.search).get("code");if(q)inp.value=q}catch(e){}
@@ -42,8 +42,8 @@
       var c=norm(inp.value);if(c.length!==10){err.textContent=MSG.invalid;return}
       btn.disabled=true;btn.textContent="لحظة...";
       try{
-        var res=await activate(c);
-        if(res==="ok"){set(KEY,c);if(mo)mo.disconnect();d.remove();box=null;document.documentElement.style.overflow="";return}
+        var res=window.FORMA_CLOUD?await window.FORMA_CLOUD.activate(c):await activate(c);
+        if(res==="ok"){set(KEY,c);if(mo)mo.disconnect();d.remove();box=null;document.documentElement.style.overflow="";if(!window.FORMA_CLOUD)window.dispatchEvent(new Event("forma:activated"));return}
         err.textContent=MSG[res]||MSG.invalid;
       }catch(x){err.textContent=MSG.net}
       btn.disabled=false;btn.textContent="تفعيل";
