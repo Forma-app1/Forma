@@ -180,7 +180,9 @@ const iosOther=isIOS&&/CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser/i.test(UA);
 function instKind(){if(isStandalone())return"";if(inApp&&(isIOS||isAndroid))return"inapp";if(isIOS)return iosOther?"ios-other":"ios";if(deferredPrompt)return"prompt";if(isAndroid)return"android";return""}
 const instGet=k=>{try{return+localStorage.getItem("forma-inst-"+k)||0}catch(e){return 0}};
 const instSet=k=>{try{localStorage.setItem("forma-inst-"+k,String(Date.now()))}catch(e){}};
-const needGate=()=>{const k=instKind();return !!k&&(k!=="prompt"||isAndroid)&&!instGet("skip")};
+/* النسخة العامة: اللي ما فعّل يثبت التطبيق أول، والكود يكتبه داخل التطبيق (مو في سفاري) */
+const mustInstall=()=>!!document.querySelector('script[src="gate.js"]')&&!localStorage.getItem("forma_lic");
+const needGate=()=>{const k=instKind();return !!k&&(k!=="prompt"||isAndroid)&&(!instGet("skip")||mustInstall())};
 const IIC={
   share:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>`,
   plus:`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
@@ -207,7 +209,7 @@ function vInstall(){
     <div class="sub">يصير تطبيق على شاشتك. يفتح بشاشة كاملة ويشتغل بدون نت.</div>
     <div class="card">${instSteps(k)}</div>
     ${isIOS?`<p class="note">ثبّته قبل تبدأ. اللي تسجله في المتصفح ما ينتقل للتطبيق.</p>`:""}
-    <button type="button" class="ghost wide" id="instSkip">أكمل في المتصفح</button>
+    ${mustInstall()?`<p class="note center">بعد ما تثبته، افتحه من شاشتك واكتب كود التفعيل هناك.</p>`:`<button type="button" class="ghost wide" id="instSkip">أكمل في المتصفح</button>`}
   </div>`;
 }
 
