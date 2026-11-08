@@ -223,7 +223,7 @@ function iosSplash(){
       x.drawImage(img,X,Y,z,z);x.restore();return c.toDataURL("image/png")};
     const add=(media,href)=>{const l=document.createElement("link");l.rel="apple-touch-startup-image";l.media=media;l.href=href;document.head.appendChild(l)};
     const base=o=>`screen and (device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${r}) and (orientation: ${o})`;
-    const dark=matchMedia("(prefers-color-scheme: dark)").matches,BG={light:"#F1F3F1",dark:"#0B0F0E"};
+    const dark=matchMedia("(prefers-color-scheme: dark)").matches,BG={light:"#EEF3F2",dark:"#03080A"};
     [["portrait",w,h],["landscape",h,w]].forEach(([o,W,H])=>{
       add(base(o)+" and (prefers-color-scheme: light)",mk(BG.light,W,H));
       add(base(o)+" and (prefers-color-scheme: dark)",mk(BG.dark,W,H));
@@ -825,46 +825,46 @@ function svgImg(el,w,h,color){return new Promise(res=>{if(!el)return res(null);c
 async function cardBase(){
   const W=1080,H=1920,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   try{await Promise.all(["800 90px Alexandria","700 40px Alexandria","700 40px Almarai","400 36px Almarai"].map(f=>document.fonts.load(f)))}catch(e){}
-  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#0B0F0E");g.addColorStop(1,"#13231D");x.fillStyle=g;x.fillRect(0,0,W,H);
-  const rg=x.createRadialGradient(W*0.85,H*0.12,10,W*0.85,H*0.12,700);rg.addColorStop(0,"rgba(61,203,149,.28)");rg.addColorStop(1,"rgba(61,203,149,0)");x.fillStyle=rg;x.fillRect(0,0,W,H);
-  const lg=document.querySelector("#hdr .logo");const mk=await svgImg(lg&&lg.querySelector(".mk"),150,150,"#fff"),wm=await svgImg(lg&&lg.querySelector(".wm"),Math.round(80*6478/1490),80,"#F1F3F1");
-  if(mk)x.drawImage(mk,90,110,150,150);if(wm)x.drawImage(wm,270,145,Math.round(80*6478/1490),80);
+  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#010101");g.addColorStop(1,"#162329");x.fillStyle=g;x.fillRect(0,0,W,H);
+  const rg=x.createRadialGradient(W*0.85,H*0.12,10,W*0.85,H*0.12,700);rg.addColorStop(0,"rgba(141,169,173,.34)");rg.addColorStop(1,"rgba(141,169,173,0)");x.fillStyle=rg;x.fillRect(0,0,W,H);
+  const lg=document.querySelector("#hdr .logo");const mk=await svgImg(lg&&lg.querySelector(".mk"),150,150,"#fff"),wm=await svgImg(lg&&lg.querySelector(".wm"),348,60,"#DBEAE5");
+  if(mk)x.drawImage(mk,90,110,150,150);if(wm)x.drawImage(wm,270,155,348,60);
   x.direction="rtl";x.textAlign="right";
   return {cv,x,W,H};
 }
 const F1='"Alexandria","Almarai",sans-serif',F2='"Almarai","Alexandria",sans-serif';
-function txt(x,s,px,y,o){o=o||{};x.font=`${o.w||700} ${px}px ${o.f||F1}`;x.fillStyle=o.c||"#F1F3F1";x.direction=o.dir||"rtl";x.textAlign=o.al||"right";x.fillText(s,o.x??990,y,o.max||900)}
+function txt(x,s,px,y,o){o=o||{};x.font=`${o.w||700} ${px}px ${o.f||F1}`;x.fillStyle=o.c||"#DBEAE5";x.direction=o.dir||"rtl";x.textAlign=o.al||"right";x.fillText(s,o.x??990,y,o.max||900)}
 function rr(x,X,Y,w,h,r,fill){x.beginPath();x.roundRect?x.roundRect(X,Y,w,h,r):x.rect(X,Y,w,h);x.fillStyle=fill;x.fill()}
-function statBoxes(x,y,items){const w=280,gap=30;items.forEach((it,i)=>{const X=990-w-(i*(w+gap));rr(x,X,y,w,200,36,"rgba(255,255,255,.06)");txt(x,it[0],76,y+105,{x:X+w/2,al:"center",dir:"ltr",w:800});txt(x,it[1],34,y+160,{x:X+w/2,al:"center",c:"#9AA7A1",f:F2,w:400})})}
-function cardFoot(x,H){txt(x,"سجّل أكلك وتمرينك بالعربي",40,H-210,{c:"#9AA7A1",f:F2,w:700});txt(x,"forma-app1.github.io/Forma",40,H-150,{c:"#3DCB95",dir:"ltr",w:700})}
+function statBoxes(x,y,items){const w=280,gap=30;items.forEach((it,i)=>{const X=990-w-(i*(w+gap));rr(x,X,y,w,200,36,"rgba(255,255,255,.06)");txt(x,it[0],76,y+105,{x:X+w/2,al:"center",dir:"ltr",w:800});txt(x,it[1],34,y+160,{x:X+w/2,al:"center",c:"#8DA9AD",f:F2,w:400})})}
+function cardFoot(x,H){txt(x,"سجّل أكلك وتمرينك بالعربي",40,H-210,{c:"#8DA9AD",f:F2,w:700});txt(x,"forma-app1.github.io/Forma",40,H-150,{c:"#5FD8CB",dir:"ltr",w:700})}
 async function shareWorkout(h,title){
   const {cv,x,W,H}=await cardBase();
-  txt(x,dateAr(h.date),40,400,{c:"#9AA7A1",f:F2});
+  txt(x,dateAr(h.date),40,400,{c:"#8DA9AD",f:F2});
   txt(x,"خلصت "+title,96,510,{w:800});
-  txt(x,(getProg(h.prog)||{ar:""}).ar,40,580,{c:"#3DCB95"});
+  txt(x,(getProg(h.prog)||{ar:""}).ar,40,580,{c:"#5FD8CB"});
   const nsets=Object.values(h.sets).reduce((a,s)=>a+s.length,0);
   statBoxes(x,650,[[String(h.dur??"-"),"دقيقة"],[String(nsets),"مجموعة"],[fmt(h.vol),"كغ رفعتها"]]);
   let y=960;
-  if(h.prs&&h.prs.length){rr(x,90,y-70,900,110,30,"rgba(61,203,149,.16)");txt(x,"رقم قياسي جديد: ",44,y,{c:"#3DCB95",w:800});txt(x,h.prs[0]+" · "+Math.max(...h.sets[h.prs[0]].map(s=>s[0]))+" kg",40,y,{x:130,al:"left",dir:"ltr",max:560});y+=140}
+  if(h.prs&&h.prs.length){rr(x,90,y-70,900,110,30,"rgba(95,216,203,.16)");txt(x,"رقم قياسي جديد: ",44,y,{c:"#5FD8CB",w:800});txt(x,h.prs[0]+" · "+Math.max(...h.sets[h.prs[0]].map(s=>s[0]))+" kg",40,y,{x:130,al:"left",dir:"ltr",max:560});y+=140}
   Object.entries(h.sets).slice(0,7).forEach(([n,ss])=>{const top=ss.reduce((a,b)=>b[0]>a[0]?b:a,ss[0]);
     x.fillStyle="rgba(255,255,255,.08)";x.fillRect(90,y+34,900,2);
-    txt(x,n,40,y,{x:90,al:"left",dir:"ltr",w:700,max:640});txt(x,top[0]?top[0]+"×"+top[1]:top[1]+" reps",40,y,{x:990,al:"right",dir:"ltr",c:"#9AA7A1"});y+=96});
+    txt(x,n,40,y,{x:90,al:"left",dir:"ltr",w:700,max:640});txt(x,top[0]?top[0]+"×"+top[1]:top[1]+" reps",40,y,{x:990,al:"right",dir:"ltr",c:"#8DA9AD"});y+=96});
   cardFoot(x,H);openShare(cv,"forma-workout.png","خلصت تمريني مع FORMA");
 }
 async function shareProgress(){
   const p=S.profile,cw=currentWeight(),startW=p.startW||p.w,diff=r1(cw-startW),days=Math.max(1,daysBetween(p.start||today(),today())+1);
   const {cv,x,W,H}=await cardBase();
-  txt(x,"من "+dateAr(p.start||today())+" لليوم",40,400,{c:"#9AA7A1",f:F2});
+  txt(x,"من "+dateAr(p.start||today())+" لليوم",40,400,{c:"#8DA9AD",f:F2});
   const big=diff===0?"ثابت":(diff<0?"نزلت ":"زدت ")+Math.abs(diff)+" كغ";
-  txt(x,big,130,560,{w:800,c:"#3DCB95"});
+  txt(x,big,130,560,{w:800,c:"#5FD8CB"});
   txt(x,"في "+dL(days),56,650,{w:700});
   const trained=S.history.filter(h=>!p.start||h.date>=p.start).length;
   statBoxes(x,740,[[String(r1(cw)),"وزني الحين"],[String(trained),"تمرين"],[String(streak()),"يوم متتالي"]]);
   const ws=weightsSorted().filter(w=>!p.start||w[0]>=p.start).slice(-30);
   if(ws.length>1){const X0=90,X1=990,Y0=1050,Y1=1500,v=ws.map(w=>w[1]),mn=Math.min(...v)-0.5,mx=Math.max(...v)+0.5;
     const X=i=>X0+i*(X1-X0)/(ws.length-1),Y=val=>Y0+(mx-val)*(Y1-Y0)/(mx-mn);
-    x.strokeStyle="#3DCB95";x.lineWidth=10;x.lineCap="round";x.lineJoin="round";x.beginPath();ws.forEach((w,i)=>{const sl=v.slice(Math.max(0,i-6),i+1),a=sl.reduce((q,b)=>q+b,0)/sl.length;i?x.lineTo(X(i),Y(a)):x.moveTo(X(i),Y(a))});x.stroke();
-    txt(x,"متوسط وزني",34,Y1+80,{c:"#9AA7A1",f:F2,w:400})}
+    x.strokeStyle="#5FD8CB";x.lineWidth=10;x.lineCap="round";x.lineJoin="round";x.beginPath();ws.forEach((w,i)=>{const sl=v.slice(Math.max(0,i-6),i+1),a=sl.reduce((q,b)=>q+b,0)/sl.length;i?x.lineTo(X(i),Y(a)):x.moveTo(X(i),Y(a))});x.stroke();
+    txt(x,"متوسط وزني",34,Y1+80,{c:"#8DA9AD",f:F2,w:400})}
   cardFoot(x,H);openShare(cv,"forma-progress.png","تقدمي مع FORMA");
 }
 function openShare(cv,name,title){
