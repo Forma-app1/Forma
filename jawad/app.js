@@ -445,7 +445,7 @@ function coachCtx(){
     week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
 }
 function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return "";const d=Math.ceil(l/864e5);
-  return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>فورما مجاني للكل · ${d<=1?"آخر يوم":d===2?"باقي يومين":"باقي "+d+" أيام"}</b><small>اشترِ فورما مرة وحدة بدون اشتراك، وكمّل على بياناتك.</small></span><i>اشترِ ‹</i></a>`}
+  return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>فورما مجاني للكل لمدة أسبوع</b><small>${d<=1?"آخر يوم":d===2?"باقي يومين":"باقي "+d+" أيام"}. اشترِه مرة وحدة بدون اشتراك وكمّل على بياناتك.</small></span><i>اشترِ ‹</i></a>`}
 const APP_URL="https://forma-app1.github.io/Forma/";
 function shareApp(){const d={title:"FORMA",text:"جرّب فورما: برامج تمرين مبنية على العلم، وسعرات مطاعمنا جاهزة.",url:APP_URL};
   if(navigator.share)navigator.share(d).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(d.text+" "+d.url).then(()=>toast("انسخ الرابط. أرسله لخويك"))}
