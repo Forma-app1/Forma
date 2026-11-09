@@ -6,7 +6,9 @@
   var KEY="forma_lic", DEV="forma_dev";
   /* التجربة المجانية: 3 أيام بدون كود */
   var TRIAL="forma_trial",DAYS=3,BUY="https://1oxoxu.zid.store/";
-  function trialLeft(){var t=+get(TRIAL)||0;if(!t)return null;return Math.max(0,DAYS*864e5-(Date.now()-t))}
+  /* فترة مجانية للكل لين هذا التاريخ. بعدها لازم كود. غيّر التاريخ لو تبي تمددها */
+  var FREE_UNTIL=Date.parse("2026-11-17T23:59:59+03:00");
+  function trialLeft(){return Math.max(0,FREE_UNTIL-Date.now())}
   window.FORMA_TRIAL={left:function(){return get(KEY)?null:trialLeft()},buy:BUY};
   function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
   function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -37,7 +39,7 @@
     var st=document.createElement("style");st.textContent=css;document.head.appendChild(st);
     var d=document.createElement("div");d.className="fg";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
     var exp=trialLeft()===0;
-    d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>'+(exp?"خلصت تجربتك المجانية":"هلا بك في فورما")+'</h1><p>'+(exp?"عجبك فورما؟ اشتره مرة وحدة بدون اشتراك، وكل اللي سجلته يبقى.":"جرّبه 3 أيام مجانا. بدون كود وبدون بطاقة.")+'</p>'+
+    d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>'+(exp?"خلصت الفترة المجانية":"هلا بك في فورما")+'</h1><p>'+(exp?"عجبك فورما؟ اشتره مرة وحدة بدون اشتراك، وكل اللي سجلته يبقى.":"جرّبه 3 أيام مجانا. بدون كود وبدون بطاقة.")+'</p>'+
       (exp?'<a class="primary fg-buy" href="'+BUY+'" target="_blank" rel="noopener">اشترِ فورما</a>':'<button class="primary wide" type="button" id="fgTrial">ابدأ التجربة المجانية</button>')+'<div class="fg-or">عندك كود تفعيل؟</div>'+
       '<input type="text" id="fgCode" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="FM-XXXXX-XXXXX" aria-label="كود التفعيل">'+
       '<button class="wide" type="submit">تفعيل</button><div class="fg-err" id="fgErr" aria-live="polite"></div>'+
