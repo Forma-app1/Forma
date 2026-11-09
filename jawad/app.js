@@ -106,11 +106,11 @@ const G=()=>targets(S.profile,S.adj);
 function getFood(fid){if(!fid)return null;return fid[0]==="b"?FOODS[+fid.slice(1)]:S.custom[+fid.slice(1)]}
 const eFood=e=>e.x||getFood(e.fid)||{n:"صنف محذوف",u:"pc",k:0,p:0,c:0,f:0};
 const factor=(f,amt)=>f.u==="g"?amt/100:amt;
-const amtLabel=(f,amt)=>f.u==="g"?`${fmt(amt)} جم`:(amt===0.5?"نص حبة":amt===1?"حبة":amt===2?"حبتين":`${amt} حبات`);
+const amtLabel=(f,amt)=>f.u==="g"?`${fmt(amt)} جم`:f.u==="sp"?(amt===0.5?"نص ملعقة":amt===1?"ملعقة":amt===2?"ملعقتين":`${amt} ملاعق`):(amt===0.5?"نص حبة":amt===1?"حبة":amt===2?"حبتين":`${amt} حبات`);
 function macrosOf(f,amt){const m=factor(f,amt);return {k:(f.k||0)*m,p:(f.p||0)*m,c:(f.c||0)*m,f:(f.f||0)*m}}
 function totals(k){const t={k:0,p:0,c:0,f:0};(S.days[k]?.food||[]).forEach(e=>{const m=macrosOf(eFood(e),e.amt);t.k+=m.k;t.p+=m.p;t.c+=m.c;t.f+=m.f});return t}
 const foodName=f=>f.store&&RESTS.includes(f.store)&&!f.n.includes(f.store)?f.n:f.n;
-const foodSub=f=>{const unit=f.u==="g"?"لكل 100 جم":"للحبة";return `${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${fmt(f.k)} سعرة ${unit}`};
+const foodSub=f=>{const unit=f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملعقة":"للحبة";return `${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${fmt(f.k)} سعرة ${unit}`};
 function srcTag(f){if(f.code)return `<span class="pill mute">من الباركود</span>`;const s=f.store&&SOURCES[f.store];if(!s)return "";const off=s[1].startsWith("رسمي");return `<span class="pill ${off?"":"mute"}">${off?"قيم رسمية":"قيم تقديرية"}</span>`}
 
 /* ===== الأيام والسلسلة ===== */
@@ -460,7 +460,7 @@ let foodDay=null,cat="الكل",q="";
 function dayLabel(k){if(k===today())return "اليوم";if(k===key(addDays(new Date(),-1)))return "أمس";try{return parseKey(k).toLocaleDateString("ar-u-nu-latn",{weekday:"long",day:"numeric",month:"long"})}catch(e){return k}}
 /* ماكروز ملونة: P بروتين، C كارب، F دهون */
 const mx=(p,c,f)=>`<span class="mx" dir="ltr"><span class="mp">P<b>${p==null?"-":fmt(p)}</b></span><span class="mc">C<b>${c==null?"-":fmt(c)}</b></span><span class="mf">F<b>${f==null?"-":fmt(f)}</b></span></span>`;
-const foodRow=f=>`<button class="item fi" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${f.store&&RESTS.includes(f.store)?esc(f.store)+" · ":""}${f.u==="g"?"لكل 100 جم":"للحبة"}</small>${mx(f.p,f.c,f.f)}</span><span class="kc num">${fmt(f.k)}<small>سعرة</small></span><span class="plus" aria-hidden="true">+</span></button>`;
+const foodRow=f=>`<button class="item fi" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${f.store&&RESTS.includes(f.store)?esc(f.store)+" · ":""}${f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملعقة":"للحبة"}</small>${mx(f.p,f.c,f.f)}</span><span class="kc num">${fmt(f.k)}<small>سعرة</small></span><span class="plus" aria-hidden="true">+</span></button>`;
 let browse=false;
 function vFood(){
   foodDay=foodDay||today();
@@ -552,7 +552,7 @@ function openFood(fid){
     const draw=()=>{const m=macrosOf(f,amt);sh.innerHTML=`<div class="grab"></div>
       <div class="row"><div><h2>${esc(f.n)}</h2><div class="sub">${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${f.cat}</div></div>${srcTag(f)}</div>
       <div class="amts">${opts.map(v=>`<button data-a="${v}" aria-pressed="${v===amt}">${isG?v+" جم":v===0.5?"½":v}</button>`).join("")}</div>
-      <div class="row"><input type="number" inputmode="decimal" id="amtIn" aria-label="${isG?"الكمية بالجرام":"عدد الحبات"}" value="${amt}" style="text-align:center"><span class="sub" style="white-space:nowrap">${isG?"جرام":"حبة"}</span></div>
+      <div class="row"><input type="number" inputmode="decimal" id="amtIn" dir="ltr" aria-label="${isG?"الكمية بالجرام":f.u==="sp"?"عدد الملاعق":"عدد الحبات"}" value="${amt}" style="text-align:center"><span class="sub" style="white-space:nowrap">${isG?"جرام":f.u==="sp"?"ملعقة":"حبة"}</span></div>
       <div class="meals">${MEALS.map(x=>`<button data-m="${x}" aria-pressed="${x===meal}">${x}</button>`).join("")}</div>
       <div class="mrow"><div><b>${fmt(m.k)}</b><span>سعرة</span></div><div><b>${fmt(m.p)}</b><span>بروتين</span></div><div><b>${f.c==null?"-":fmt(m.c)}</b><span>كارب</span></div><div><b>${f.f==null?"-":fmt(m.f)}</b><span>دهون</span></div></div>
       ${f.c==null?`<p class="note" style="margin-top:8px">${f.store} ما نشر الكارب والدهون لهذا الصنف.</p>`:""}
@@ -1266,6 +1266,8 @@ $("#view").addEventListener("input",e=>{
     if(f==="kg"){const best=+e.target.dataset.best;e.target.classList.toggle("pr",best>0&&+e.target.value>best)}}
 });
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="today")render()});
+/* خانات الأرقام: تحديد الرقم كامل أول ما تضغط، عشان تكتب الجديد على طول بدون ما تمسح */
+document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&&t.type==="number"&&t.value!==""){setTimeout(()=>{try{t.select()}catch(x){}},0)}});
 render();
 initSync();
 
