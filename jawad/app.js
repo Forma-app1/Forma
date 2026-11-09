@@ -406,6 +406,7 @@ function vToday(){
   return `
   <div class="th"><span class="sub">${dateAr(T)}${st?` · <b class="hotc">${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض</b>`:""}</span><h1>${greet} ${esc(S.profile.name)}</h1></div>
   ${install}
+  ${trialCard()}
   <div class="card hero2">
     <div class="h2-top">${ring(clamp(t.k/g.kcal,0,1),"lg"+(over?" over":""),`<b class="num">${fmt(Math.abs(left))}</b><span>${over?"سعرة زيادة":"سعرة باقية"}</span>`)}
       <div class="h2-st"><div><span>هدفك</span><b class="num">${fmt(g.kcal)}</b></div><div><span>أكلت</span><b class="num">${fmt(t.k)}</b></div><div><span>باقي بروتين</span><b class="num acc">${fmt(Math.max(0,g.p-t.p))} <small>جم</small></b></div></div></div>
@@ -443,6 +444,11 @@ function coachCtx(){
     trainedToday:!!S.days[T]?.trained,daysSinceTrain:lastT?daysBetween(lastT,T):999,
     week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
 }
+function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return "";const d=Math.ceil(l/864e5);
+  return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>تجربتك المجانية · ${d<=1?"آخر يوم":d===2?"باقي يومين":"باقي "+d+" أيام"}</b><small>اشترِ فورما مرة وحدة بدون اشتراك، وكمّل على بياناتك.</small></span><i>اشترِ ‹</i></a>`}
+const APP_URL="https://forma-app1.github.io/Forma/";
+function shareApp(){const d={title:"FORMA",text:"جرّب فورما 3 أيام مجانا: برامج تمرين مبنية على العلم، وسعرات مطاعمنا جاهزة.",url:APP_URL};
+  if(navigator.share)navigator.share(d).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(d.text+" "+d.url).then(()=>toast("انسخ الرابط. أرسله لخويك"))}
 let coachIdx=0;
 const COACH_ACT={food:["سجّل أكلك","food"],train:["ابدأ التمرين","train"],weight:["سجّل وزنك","weight"],setup:["عدّل هدفك","setup"]};
 function coachCard(){
@@ -1084,6 +1090,7 @@ function vSettings(){
   <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${progList().map(k=>progOpt(k,`data-prog="${k}"`)).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p>
     <div class="grid2"><button id="openEdit">عدّل جدولي الحالي</button><button id="newMine">${S.mine?"عدّل جدولي الخاص":"سو جدولك من الصفر"}</button></div></div>
   ${cloudCard()}
+  <div class="card stack"><h2>عط خويك فورما</h2><p class="note">أرسل له الرابط، ويجربه 3 أيام مجانا.</p><button id="shareApp">شارك فورما</button></div>
   <div class="card stack"><h2>بياناتي</h2><button data-go="setup">عدّل الطول والوزن والهدف</button>
     <div class="grid2"><button id="exportB">نسخة احتياطية</button><button id="importB">استرجاع نسخة</button></div><input type="file" id="importF" accept="application/json,.json" hidden>
     <p class="note">${CL&&CL.code()?"بياناتك محفوظة بالسحابة. النسخة الاحتياطية أمان زيادة.":"بياناتك محفوظة على جهازك بس. خذ نسخة احتياطية قبل ما تغيّر جوالك."}</p>
@@ -1242,6 +1249,7 @@ $("#view").addEventListener("click",e=>{
     case "coachNext":{coachIdx++;const c=$("#coach");if(c){const tmp=document.createElement("div");tmp.innerHTML=coachCard();c.replaceWith(tmp.firstElementChild)}PF.haptic("light");return}
     case "planProg":return openProgPick();
     case "licGo":return linkCode();
+    case "shareApp":return shareApp();
     case "syncNow":if(CL){CL.sync.now().then(()=>toast(syncState==="ok"?"تمت المزامنة":"ما قدرنا نزامن، جرّب بعد شوي"))}return;
     case "sayMic":return listen(b);
     case "copyY":{const src=S.days[key(addDays(parseKey(foodDay),-1))];if(src&&src.food.length){day(foodDay).food.push(...src.food.map(x=>({...x})));save();render();toast("انضاف أكل اليوم السابق")}else toast("ما فيه أكل مسجل في اليوم السابق");return}
