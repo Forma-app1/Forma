@@ -75,8 +75,22 @@ function normalize(){
 }
 normalize();
 function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}
-function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed()}
+function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
+/* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
+const VER="4.3";
+function pingUsage(){
+  if(!CL||!CL.ping||CFG.store)return;
+  try{if(navigator.onLine===false)return;
+    const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:!!d.trained};
+    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train].join("");
+    if(PF.loadJSON("forma_ping")===sig)return;
+    PF.saveJSON("forma_ping",sig);
+    const ua=navigator.userAgent||"";
+    o.os=/iPhone|iPad|iPod/.test(ua)?"ios":/Android/.test(ua)?"android":"web";
+    o.pwa=window.navigator.standalone===true||!!(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+    o.ver=VER;CL.ping(o)}catch(e){}
+}
 
 /* ===== حساب الأهداف =====
    الطاقة: معادلة Mifflin-St Jeor × مستوى النشاط
@@ -1110,7 +1124,35 @@ function cloudCard(){
     <div class="row"><input type="text" id="licIn" placeholder="FM-XXXXX-XXXXX" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" class="lic-in" aria-label="كود التفعيل"><button class="primary" id="licGo">اربط</button></div></div>`;
   return `<div class="card stack" id="cloudCard"><div class="row"><h2>بياناتك بالسحابة</h2><span class="pill ${syncState==="ok"?"":"mute"}" id="syncSt">${SYNC_L[syncState]||""}</span></div>
     <p class="note">كل تعديل ينحفظ في جهازك ويترفع لحاله. لو غيّرت جوالك، اكتب نفس الكود وترجع لك بياناتك.</p>
-    <div class="row"><span class="sub num" dir="ltr">FM-${esc(c.slice(0,5))}-•••••</span><button class="ghost" id="syncNow">زامن الحين</button></div></div>`;
+    <div class="row"><span class="sub num" dir="ltr">FM-${esc(c.slice(0,5))}-•••••</span><button class="ghost" id="syncNow">زامن الحين</button></div>${CFG.store&&CL.stats?`<button class="wide" id="statsB">لوحة المستخدمين</button>`:""}</div>`;
+}
+/* لوحة المستخدمين (نسخة جواد فقط): أرقام مجمعة من جدول usage */
+function openStats(){
+  sheet((sh,close)=>{sh.setAttribute("aria-label","لوحة المستخدمين");
+    sh.innerHTML=`<div class="stack"><div class="row"><h2>لوحة المستخدمين</h2><button class="ghost" data-x>إغلاق</button></div><p class="note" id="stB">لحظة...</p></div>`;
+    sh.addEventListener("click",e=>{if(e.target.closest("[data-x]"))close()});
+    CL.stats().then(r=>{const el=sh.querySelector("#stB");if(!el)return;
+      if(!r||r.err){el.textContent=r&&r.err==="net"?"ما فيه اتصال. جرّب بعد شوي":"هذي اللوحة لكودك الخاص فقط";return}
+      const ds=r.days||[],td=ds[ds.length-1]||{},pc=(a,b)=>b?Math.round(a/b*100)+"%":"--",mx=Math.max(1,...ds.map(d=>d.act));
+      const st=(l,v,s)=>`<div class="stat"><span class="lbl">${l}</span><b class="num">${v}</b>${s?`<span class="sub">${s}</span>`:""}</div>`;
+      el.outerHTML=`<div class="grid2">
+        ${st("نشطين اليوم",td.act||0,`${td.licd||0} مفعّل`)}
+        ${st("نشطين آخر 7 أيام",r.wau)}
+        ${st("جدد اليوم",td.newd||0)}
+        ${st("كل الأجهزة",r.devices,`آيفون ${r.ios} · أندرويد ${r.android}`)}
+        ${st("كمّلوا التسجيل",pc(r.onboarded,r.devices),`${r.onboarded} من ${r.devices}`)}
+        ${st("رجعوا بعد أول يوم",pc(r.ret_back,r.ret_base),`${r.ret_back} من ${r.ret_base}`)}
+        ${st("سجّلوا أكل",pc(r.used_food,r.devices),`${r.used_food} جهاز`)}
+        ${st("سجّلوا تمرين",pc(r.used_train,r.devices),`${r.used_train} جهاز`)}
+        ${st("مجاني تحوّل لمشتري",pc(r.converted,r.free_devices),`${r.converted} من ${r.free_devices}`)}
+        ${st("أكواد مفعّلة",r.codes_active,`${r.codes_7d} آخر 7 أيام`)}
+      </div>
+      <div class="card stack"><span class="lbl">النشطين آخر 14 يوم</span>
+        <div class="ubars">${ds.map(d=>`<i title="${d.day}: ${d.act}"><b style="height:calc((100% - 14px) * ${(d.act/mx).toFixed(3)})"></b><em class="num">${d.act}</em></i>`).join("")}</div>
+        <div class="row" dir="ltr"><span class="sub num">${esc(String(ds[0]?.day||"").slice(5))}</span><span class="sub num">${esc(String(td.day||"").slice(5))}</span></div></div>
+      <p class="note">الأرقام تبدأ من تحديث 4.3. كل جهاز ينحسب مرة باليوم لما يفتح التطبيق وفيه نت.</p>`;
+    });
+  });
 }
 function chooseData(remote,ts){
   return new Promise(res=>{let done=false;const fin=v=>{if(!done){done=true;res(v)}};
@@ -1249,6 +1291,7 @@ $("#view").addEventListener("click",e=>{
     case "coachNext":{coachIdx++;const c=$("#coach");if(c){const tmp=document.createElement("div");tmp.innerHTML=coachCard();c.replaceWith(tmp.firstElementChild)}PF.haptic("light");return}
     case "planProg":return openProgPick();
     case "licGo":return linkCode();
+    case "statsB":return openStats();
     case "shareApp":return shareApp();
     case "syncNow":if(CL){CL.sync.now().then(()=>toast(syncState==="ok"?"تمت المزامنة":"ما قدرنا نزامن، جرّب بعد شوي"))}return;
     case "sayMic":return listen(b);
@@ -1278,6 +1321,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="to
 document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&&t.type==="number"&&t.value!==""){setTimeout(()=>{try{t.select()}catch(x){}},0)}});
 render();
 initSync();
+pingUsage();
 
 /* ===== بدون نت ===== */
 if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
