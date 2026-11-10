@@ -1,5 +1,5 @@
 // غيّر الرقم مع كل تحديث
-const CACHE="forma-v4.2.3";
+const CACHE="forma-v4.3.0";
 const SHELL=["./","./index.html","./app.js","./gate.js","./foods.js","./programs.js","./smart.js","./plus.css","./manifest.webmanifest","./lib/platform.js","./lib/cloud.js","./lib/coach.js","./brand/icon-192.png","./brand/icon-512.png","./brand/apple-touch-icon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("forma-v")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
