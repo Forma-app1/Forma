@@ -114,7 +114,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3.1";
+const VER="4.3.2";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -461,7 +461,7 @@ function vToday(){
     <div class="h2-top">${ring(clamp(t.k/g.kcal,0,1),"lg"+(over?" over":""),`<b class="num">${fmt(Math.abs(left))}</b><span>${over?"سعرة زيادة":"سعرة باقية"}</span>`)}
       <div class="h2-st"><div><span>هدفك</span><b class="num">${fmt(g.kcal)}</b></div><div><span>أكلت</span><b class="num">${fmt(t.k)}</b></div><div><span>باقي بروتين</span><b class="num acc">${fmt(Math.max(0,g.p-t.p))} <small>جم</small></b></div></div></div>
     <div class="h2-m">${mr("p","بروتين",t.p,g.p)}${mr("c","كارب",t.c,g.c)}${mr("f","دهون",t.f,g.f)}</div>
-    <button class="ghost h2-sug" id="openSug">وش آكل الحين؟ ‹</button>
+    <button class="ghost h2-sug" id="openSug">محتار وش تاكل؟ ‹</button>
   </div>
   ${quickActs()}
   <div class="wo"><div class="wo-l"><span class="lbl">تمرين اليوم · ${esc(P.ar)}</span><b dir="auto">${esc(sName(nx.n))}</b><span class="sub">${nx.ex.length} تمارين${nx.day?" · "+nx.day:""}</span><div class="wo-p" title="تقدمك في البرنامج"><i style="width:${pl}%"></i></div></div>
@@ -759,7 +759,7 @@ function openPlan(){
 }
 function openSug(){
   sheet((sh,close)=>{
-    const draw=()=>{const sg=suggestions(sugFilter);lastSug=sg.list;sh.innerHTML=`<div class="grab"></div><h2>وش آكل؟</h2><p class="note" style="margin:2px 0 10px">باقي لك ${fmt(Math.max(sg.R,0))} سعرة و ${fmt(Math.max(sg.P,0))} جم بروتين. هذي أقرب خيارات تقفلهم.</p>
+    const draw=()=>{const sg=suggestions(sugFilter);lastSug=sg.list;sh.innerHTML=`<div class="grab"></div><h2>محتار وش تاكل؟</h2><p class="note" style="margin:2px 0 10px">باقي لك ${fmt(Math.max(sg.R,0))} سعرة و ${fmt(Math.max(sg.P,0))} جم بروتين. هذي أقرب خيارات تقفلهم.</p>
       <div class="chips" style="margin-bottom:6px">${[["all","الكل"],["home","أكل بيت"],["rest","مطاعم"]].map(([k,l])=>`<button class="chip" data-sug="${k}" aria-pressed="${sugFilter===k}">${l}</button>`).join("")}</div>
       <div class="list">${sg.list.length?sg.list.map((c,i)=>`<button class="item" data-sugadd="${i}"><span class="n">${esc(c.label)}<small>${esc(c.sub)}${c.dense?' · <b class="hp">بروتين عالي</b>':""}</small></span><span class="m">${fmt(c.k)} · ${fmt(c.p)}ب</span><span class="plus" aria-hidden="true">+</span></button>`).join(""):`<div class="empty">${sg.R<120?"قربت تقفل سعراتك اليوم.":"ما فيه خيار يركب على الباقي. جرّب قسم ثاني."}</div>`}</div>`};
     draw();
