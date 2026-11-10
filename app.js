@@ -9,6 +9,11 @@ Object.keys(RAW).forEach(cat=>RAW[cat].forEach(r=>{
   const store=RESTS.includes(cat)?cat:(/الحطب/.test(r[0])?"الحطب":/المراعي/.test(r[0])?"المراعي":/ندى/.test(r[0])?"ندى":null);
   FOODS.push({fid:"b"+FOODS.length,n:r[0],cat,u:r[1],k:r[2],p:r[3],c:r[4],f:r[5],store});
 }));
+/* مهم: رقم الصنف (fid) هو ترتيبه في القائمة، وبيانات المستخدمين مربوطة فيه.
+   أصناف foods.js الأساسية مجمّدة: لا تضيف ولا تحذف ولا ترتب فيها.
+   أي صنف جديد ينضاف في آخر FORMA_FOODS_ADD فقط (شوف آخر foods.js). */
+(window.FORMA_FOODS_ADD||[]).forEach(([cat,r])=>{if(!RAW[cat])RAW[cat]=[];
+  FOODS.push({fid:"b"+FOODS.length,n:r[0],cat,u:r[1],k:r[2],p:r[3],c:r[4],f:r[5],store:RESTS.includes(cat)?cat:null})});
 const CATS=Object.keys(RAW);
 const PROGRAMS=window.FORMA_PROGRAMS||{},DEFP=(window.FORMA_CONFIG&&window.FORMA_CONFIG.defaultProg&&(window.FORMA_PROGRAMS||{})[window.FORMA_CONFIG.defaultProg])?window.FORMA_CONFIG.defaultProg:"fb4",PORDER=window.FORMA_PROGRAM_ORDER||Object.keys(PROGRAMS),ALTS=window.FORMA_ALTS||{},PLAN=window.FORMA_PLAN||{};
 const MEALS=["فطور","غداء","عشاء","سناك"];
@@ -73,12 +78,43 @@ function normalize(){
   S.prog=(PROGRAMS[S.prog]||(S.prog==="mine"&&S.mine))?S.prog:DEFP;
   if(CFG.seed&&S.seeded!==(CFG.seedVer||true)){S.history=S.history.filter(h=>!(h.seed||(CFG.seedBefore&&h.prog===DEFP&&h.date<CFG.seedBefore)));S.history=CFG.seed.map(h=>({...h,seed:true})).concat(S.history);S.seeded=CFG.seedVer||true;if(CFG.progStart&&S.prog===DEFP&&S.profile)S.progStart=CFG.progStart}
 }
-normalize();
+/* إصلاح 4.3.1: تحديث 9 نوفمبر (8 مساء) أضاف أصناف في نص القائمة، فتغيرت أرقام الأصناف اللي بعدها
+   وصارت التسجيلات القديمة تشير لأصناف غلط. هنا نرجّع كل تسجيل قديم لصنفه الصحيح. يشتغل مرة وحدة. */
+let fidDirty=false;
+function fixFids(){
+  if(S.fidFix)return false;S.fidFix=1;
+  const CUT="2026-11-09",SH=[[131,5],[179,8],[230,13],[323,30]];
+  const isB=x=>typeof x==="string"&&/^b\d+$/.test(x);
+  const up=x=>{if(!isB(x))return x;const i=+x.slice(1);let s=0;SH.forEach(([a,b])=>{if(i>=a)s=b});return s?"b"+(i+s):x};
+  const fd=x=>FOODS[+x.slice(1)];
+  /* كمية منطقية للصنف؟ الجرامات أرقام كبيرة، والحبات أرقام صغيرة */
+  const ok=(x,amt)=>{const f=fd(x);if(!f||!(amt>0))return false;return f.u==="g"?amt>12:amt<=12};
+  let ch=false,est=false,any=false;
+  const ks=Object.keys(S.days||{}).sort();
+  /* قبل يوم التحديث: كله مسجل بالأرقام القديمة */
+  ks.forEach(k=>{if(k>=CUT)return;(S.days[k].food||[]).forEach(e=>{if(!isB(e.fid))return;est=true;const n=up(e.fid);if(n!==e.fid){e.fid=n;ch=true}})});
+  /* يوم التحديث نفسه: اللي قبل 8 مساء قديم واللي بعده جديد. نعرفه من الكمية، وبعدها من الترتيب والوجبة */
+  let st="old";((S.days[CUT]||{}).food||[]).forEach(e=>{if(!isB(e.fid))return;any=true;const n=up(e.fid);if(n===e.fid)return;
+    const a=ok(e.fid,e.amt),b=ok(n,e.amt);let isNew;
+    if(a&&!b)isNew=true;else if(b&&!a)isNew=false;else isNew=st==="new"||e.meal==="عشاء";
+    if(isNew)st="new";else{e.fid=n;ch=true}});
+  if(!est&&!any)return false;
+  const pk=(x,amt)=>{const n=up(x);if(est||n===x)return n;const a=ok(x,amt),b=ok(n,amt);return b&&!a?n:x};
+  (S.meals||[]).forEach(ml=>(ml.items||[]).forEach(it=>{if(isB(it.fid)){const n=pk(it.fid,it.amt);if(n!==it.fid){it.fid=n;ch=true}}}));
+  if(S.lastAmt){const o={};Object.keys(S.lastAmt).forEach(x=>{const n=isB(x)?pk(x,S.lastAmt[x]):x;if(n!==x)ch=true;if(o[n]==null)o[n]=S.lastAmt[x]});S.lastAmt=o}
+  if(est&&S.learned)Object.keys(S.learned).forEach(q=>{const n=up(S.learned[q]);if(n!==S.learned[q]){S.learned[q]=n;ch=true}});
+  /* الأخيرة: نبنيها من جديد من آخر الأيام */
+  if(ch||est){const rc=[];ks.slice().reverse().forEach(k=>{(S.days[k].food||[]).slice().reverse().forEach(e=>{if(e.fid&&rc.length<12&&!rc.includes(e.fid))rc.push(e.fid)})});
+    if(rc.join()!==(S.recent||[]).join()){S.recent=rc;ch=true}}
+  return ch;
+}
+function normalizeFix(){if(fixFids()){S._ts=Date.now();fidDirty=true}}
+normalize();normalizeFix();
 function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3";
+const VER="4.3.1";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -1166,7 +1202,7 @@ function chooseData(remote,ts){
 function initSync(){
   if(!CL)return;
   CL.sync.init({slot:STORE,get:()=>S,choose:chooseData,
-    apply:d=>{S=d&&typeof d==="object"?d:{};normalize();saveLocal();ob=null;live=null;ed=null;if(S.profile&&(tab==="setup"||tab==="plan"))tab="today";if(!S.profile)tab="setup";render();toast("رجعت بياناتك من السحابة")},
+    apply:d=>{S=d&&typeof d==="object"?d:{};normalize();normalizeFix();saveLocal();ob=null;live=null;ed=null;if(S.profile&&(tab==="setup"||tab==="plan"))tab="today";if(!S.profile)tab="setup";render();toast("رجعت بياناتك من السحابة")},
     onStatus:st=>{syncState=st;const el=$("#syncSt");if(el){el.textContent=SYNC_L[st]||"";el.classList.toggle("mute",st!=="ok")}}});
 }
 async function linkCode(){
@@ -1320,6 +1356,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="to
 /* خانات الأرقام: تحديد الرقم كامل أول ما تضغط، عشان تكتب الجديد على طول بدون ما تمسح */
 document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&&t.type==="number"&&t.value!==""){setTimeout(()=>{try{t.select()}catch(x){}},0)}});
 render();
+if(fidDirty)saveLocal();
 initSync();
 pingUsage();
 
