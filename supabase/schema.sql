@@ -131,3 +131,72 @@ revoke all on function public.sync_push(text, text, text, jsonb, bigint) from pu
 grant execute on function public.activate(text, text) to anon, authenticated;
 grant execute on function public.sync_pull(text, text, text) to anon, authenticated;
 grant execute on function public.sync_push(text, text, text, jsonb, bigint) to anon, authenticated;
+
+-- ===== الاستخدام (لوحة جواد) =====
+-- سطر لكل جهاز في اليوم. بدون اسم ولا بيانات شخصية: رقم جهاز عشوائي وكم علامة.
+alter table public.licenses add column if not exists plan text not null default 'basic';
+create table if not exists public.usage(
+  device text not null,
+  day date not null,
+  lic boolean not null default false,     -- مفعّل بكود
+  prof boolean not null default false,    -- كمّل التسجيل
+  food boolean not null default false,    -- سجّل أكل اليوم
+  train boolean not null default false,   -- تمرّن اليوم
+  pwa boolean not null default false,     -- فاتح من الشاشة الرئيسية
+  os text,
+  ver text,
+  primary key(device, day)
+);
+create index if not exists usage_day on public.usage(day);
+alter table public.usage enable row level security;
+
+create or replace function public.ping(p_device text, p_lic boolean, p_prof boolean, p_food boolean, p_train boolean, p_pwa boolean, p_os text, p_ver text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(length(p_device),0) not between 8 and 64 then return; end if;
+  insert into usage(device, day, lic, prof, food, train, pwa, os, ver)
+  values (p_device, (now() at time zone 'Asia/Riyadh')::date, coalesce(p_lic,false), coalesce(p_prof,false), coalesce(p_food,false), coalesce(p_train,false), coalesce(p_pwa,false), left(p_os,12), left(p_ver,12))
+  on conflict (device, day) do update set
+    lic = usage.lic or excluded.lic, prof = usage.prof or excluded.prof, food = usage.food or excluded.food,
+    train = usage.train or excluded.train, pwa = usage.pwa or excluded.pwa, os = excluded.os, ver = excluded.ver;
+end $$;
+
+-- للكود اللي خطته admin فقط
+create or replace function public.admin_stats(p_code text, p_device text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare h text := _lic_check(p_code, p_device); t date := (now() at time zone 'Asia/Riyadh')::date; r jsonb;
+begin
+  if h is null or not exists(select 1 from licenses where hash = h and plan = 'admin') then return jsonb_build_object('err','no'); end if;
+  with f as (select device, min(day) d0, max(day) d1, bool_or(lic) lic, bool_or(prof) prof, bool_or(food) food, bool_or(train) train,
+                    bool_or(not lic) was_free, count(*) n from usage group by device),
+  d as (select g::date as day from generate_series(t - 13, t, interval '1 day') g),
+  per as (select d.day,
+            count(u.device) act, count(u.device) filter (where u.lic) licd,
+            count(u.device) filter (where u.food) food, count(u.device) filter (where u.train) train,
+            (select count(*) from f where f.d0 = d.day) newd
+          from d left join usage u on u.day = d.day group by d.day order by d.day)
+  select jsonb_build_object(
+    'today', t,
+    'days', (select jsonb_agg(to_jsonb(per)) from per),
+    'devices', (select count(*) from f),
+    'onboarded', (select count(*) from f where prof),
+    'used_food', (select count(*) from f where food),
+    'used_train', (select count(*) from f where train),
+    'wau', (select count(distinct device) from usage where day > t - 7),
+    'ret_base', (select count(*) from f where d0 < t),
+    'ret_back', (select count(*) from f where d0 < t and d1 > d0),
+    'free_devices', (select count(*) from f where was_free),
+    'converted', (select count(*) from f where was_free and lic),
+    'ios', (select count(distinct device) from usage where os = 'ios'),
+    'android', (select count(distinct device) from usage where os = 'android'),
+    'pwa', (select count(distinct device) from usage where pwa),
+    'codes_active', (select count(*) from licenses where activated_at is not null),
+    'codes_7d', (select count(*) from licenses where activated_at > now() - interval '7 days')
+  ) into r;
+  return r;
+end $$;
+
+revoke all on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text) from public;
+revoke all on function public.admin_stats(text, text) from public;
+grant execute on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text) to anon, authenticated;
+grant execute on function public.admin_stats(text, text) to anon, authenticated;
