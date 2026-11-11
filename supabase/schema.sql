@@ -162,6 +162,37 @@ begin
 end $$;
 
 -- للكود اللي خطته admin فقط
+
+-- 4.3.3: مرحلة البداية (1 شاشة التثبيت، 2-4 خطوات التسجيل، 5 خلص، 0 نسخة قديمة)
+alter table public.usage add column if not exists step smallint not null default 0;
+drop function if exists public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text);
+create or replace function public.ping(p_device text, p_lic boolean, p_prof boolean, p_food boolean, p_train boolean, p_pwa boolean, p_os text, p_ver text, p_step int default 0) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if coalesce(length(p_device),0) not between 8 and 64 then return; end if;
+  insert into usage(device, day, lic, prof, food, train, pwa, os, ver, step)
+  values (p_device, (now() at time zone 'Asia/Riyadh')::date, coalesce(p_lic,false), coalesce(p_prof,false), coalesce(p_food,false), coalesce(p_train,false), coalesce(p_pwa,false), left(p_os,12), left(p_ver,12), least(greatest(coalesce(p_step,0),0),5))
+  on conflict (device, day) do update set
+    lic = usage.lic or excluded.lic, prof = usage.prof or excluded.prof, food = usage.food or excluded.food,
+    train = usage.train or excluded.train, pwa = usage.pwa or excluded.pwa, os = excluded.os, ver = excluded.ver,
+    step = greatest(usage.step, excluded.step);
+end $$;
+revoke all on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text, int) from public;
+grant execute on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text, int) to anon, authenticated;
+create or replace function public.admin_funnel() returns jsonb
+language sql security definer set search_path = public as $$
+  with s as (select device, max(step) st, bool_or(prof) prof from usage group by device having max(step) > 0 or (bool_or(prof) and min(ver) >= '4.3.3'))
+  select jsonb_build_object(
+    'f_base', count(*),
+    'f_install', count(*) filter (where st = 1 and not prof),
+    'f_s1', count(*) filter (where st >= 2 or prof),
+    'f_s2', count(*) filter (where st >= 3 or prof),
+    'f_s3', count(*) filter (where st >= 4 or prof),
+    'f_done', count(*) filter (where st >= 5 or prof))
+  from s
+$$;
+revoke all on function public.admin_funnel() from public, anon, authenticated;
+
 create or replace function public.admin_stats(p_code text, p_device text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare h text := _lic_check(p_code, p_device); t date := (now() at time zone 'Asia/Riyadh')::date; r jsonb;
@@ -193,10 +224,7 @@ begin
     'codes_active', (select count(*) from licenses where activated_at is not null),
     'codes_7d', (select count(*) from licenses where activated_at > now() - interval '7 days')
   ) into r;
-  return r;
+  return r || public.admin_funnel();
 end $$;
-
-revoke all on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text) from public;
 revoke all on function public.admin_stats(text, text) from public;
-grant execute on function public.ping(text, boolean, boolean, boolean, boolean, boolean, text, text) to anon, authenticated;
 grant execute on function public.admin_stats(text, text) to anon, authenticated;
