@@ -114,7 +114,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3.2";
+const VER="4.3.3";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -238,29 +238,61 @@ const IIC={
   plus:`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`,
   dots:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`,
   vdots:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>`,
-  app:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`
+  app:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
+  book:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg>`,
+  tabs:`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="13" height="13" rx="3"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></svg>`
+};
+/* سفاري 26 نقل زر المشاركة داخل ⋯ جنب الرابط. نعرف الإصدار من Version/ لأن رقم النظام صار ثابت في UA */
+const safariVer=+((UA.match(/Version\/(\d+)/)||[])[1]||0);
+const ios26=isIOS&&safariVer>=26;
+/* لغة الجوال عربي: واجهة سفاري معكوسة، فزر ⋯ يصير يسار */
+const sysRTL=/^ar|^he|^fa|^ur/i.test(navigator.language||"");
+/* رسومات صغيرة تشبه شاشة الجوال، والزر المطلوب منوّر */
+const MK={
+  bar26:()=>`<div class="mk mk-bar" dir="${sysRTL?"rtl":"ltr"}"><span class="mk-url"><i>‹</i>forma-app1.github.io</span><span class="mk-dot hot">⋯</span></div>`,
+  bar18:()=>`<div class="mk mk-tb" dir="${sysRTL?"rtl":"ltr"}"><i>‹</i><i>›</i><i class="hot">${IIC.share}</i><i>${IIC.book}</i><i>${IIC.tabs}</i></div>`,
+  barTop:()=>`<div class="mk mk-bar" dir="${sysRTL?"rtl":"ltr"}"><span class="mk-url">forma-app1.github.io</span><span class="mk-dot hot">${IIC.share}</span></div>`,
+  menu:()=>`<div class="mk mk-list"><div>نسخ</div><div class="hot">${IIC.share}<span>مشاركة<small>Share</small></span></div><div>إضافة إلى المفضلة</div></div>`,
+  sheet:()=>`<div class="mk mk-list"><div>نسخ</div><div>إضافة إلى قائمة القراءة</div><div class="hot">${IIC.plus}<span>إضافة إلى الشاشة الرئيسية<small>Add to Home Screen</small></span></div><div class="mk-more">عرض المزيد ⌄</div></div>`,
+  add:(ico,web)=>`<div class="mk mk-add" dir="${sysRTL?"rtl":"ltr"}"><div class="mk-top"><span>إلغاء</span><b>إضافة إلى الشاشة الرئيسية</b><span class="hot">إضافة</span></div><div class="mk-app"><img src="${ico}" alt="" width="34" height="34"><span>FORMA</span></div>${web?`<div class="mk-sw"><span>فتح كتطبيق ويب<small>Open as Web App</small></span><i class="on"></i></div>`:""}</div>`,
+  inapp:()=>`<div class="mk mk-bar" dir="${sysRTL?"rtl":"ltr"}"><span class="mk-dot">✕</span><span class="mk-url">forma-app1.github.io</span><span class="mk-dot hot">${isIOS?"⋯":"⋮"}</span></div>`,
+  open:()=>`<div class="mk mk-list"><div>نسخ الرابط</div><div class="hot">${IIC.share}<span>فتح في ${isIOS?"Safari":"Chrome"}<small>Open in ${isIOS?"Safari":"browser"}</small></span></div></div>`,
+  andMenu:()=>`<div class="mk mk-list"><div>علامة جديدة</div><div class="hot">${IIC.plus}<span>تثبيت التطبيق<small>Install app</small></span></div><div>مشاركة</div></div>`
 };
 function instSteps(k){
-  const st=(ic,t)=>`<li><span class="ins-ic">${ic}</span><span>${t}</span></li>`;
-  const add=st(IIC.plus,"اختر <b>«إضافة إلى الشاشة الرئيسية»</b>. إذا ما لقيته، انزل تحت في القائمة")+st(IIC.app,"اضغط <b>«إضافة»</b>، وافتح FORMA من الأيقونة اللي على شاشتك");
-  if(k==="inapp")return `<ol class="ins-steps">${st(isIOS?IIC.dots:IIC.vdots,"أنت فاتح الرابط من داخل تطبيق. اضغط <b>"+(isIOS?"⋯":"⋮")+"</b> فوق")}${st(IIC.share,`اختر <b>«فتح في ${isIOS?"Safari":"Chrome"}»</b> أو <bdi dir="ltr">Open in browser</bdi>`)}${st(IIC.app,"بعدها تطلع لك خطوات التثبيت")}</ol>
-    <button type="button" class="ghost wide" id="instCopy">انسخ الرابط والصقه في ${isIOS?"Safari":"Chrome"}</button>`;
-  if(k==="ios")return `<ol class="ins-steps">${st(IIC.share,"اضغط زر <b>المشاركة</b> تحت الشاشة. إذا ما شفته، اضغط <b>⋯</b> أول")}${add}</ol>`;
-  if(k==="ios-other")return `<ol class="ins-steps">${st(IIC.share,"اضغط زر <b>المشاركة</b> جنب الرابط فوق")}${add}</ol>`;
+  const ico=(document.querySelector('link[rel="apple-touch-icon"]')||{}).href||"apple-touch-icon.png";
+  const st=(n,t,mk)=>`<li class="ins-st"><div class="ins-h"><span class="ins-n num">${n}</span><span>${t}</span></div>${mk||""}</li>`;
+  const done=n=>st(n,"افتح <b>FORMA</b> من الأيقونة اللي على شاشتك");
+  if(k==="inapp")return `<ol class="ins-steps">${st(1,`أنت فاتح الرابط من داخل تطبيق، والتثبيت ما يشتغل منه. اضغط <b>${isIOS?"⋯":"⋮"}</b> فوق`,MK.inapp())}${st(2,`اختر <b>«فتح في ${isIOS?"Safari":"Chrome"}»</b>`,MK.open())}${st(3,"بعدها تطلع لك خطوات التثبيت")}</ol>
+    <button type="button" class="ghost wide" id="instCopy">ما لقيتها؟ انسخ الرابط والصقه في ${isIOS?"Safari":"Chrome"}</button>`;
+  if(k==="ios"&&ios26)return `<ol class="ins-steps">${st(1,`اضغط زر <b>⋯</b> جنب الرابط تحت`,MK.bar26())}${st(2,"اضغط <b>«مشاركة»</b>",MK.menu())}${st(3,"انزل تحت واختر <b>«إضافة إلى الشاشة الرئيسية»</b>. ما لقيتها؟ اضغط «عرض المزيد»",MK.sheet())}${st(4,"خلّ <b>«فتح كتطبيق ويب»</b> شغال، واضغط <b>«إضافة»</b>",MK.add(ico,true))}${done(5)}</ol>`;
+  if(k==="ios")return `<ol class="ins-steps">${st(1,"اضغط زر <b>المشاركة</b> تحت الشاشة. ما شفته؟ اضغط على الرابط تحت مرة",MK.bar18())}${st(2,"انزل تحت واختر <b>«إضافة إلى الشاشة الرئيسية»</b>",MK.sheet())}${st(3,"اضغط <b>«إضافة»</b> فوق",MK.add(ico))}${done(4)}</ol>`;
+  if(k==="ios-other")return `<ol class="ins-steps">${st(1,"اضغط زر <b>المشاركة</b> جنب الرابط فوق",MK.barTop())}${st(2,"اختر <b>«إضافة إلى الشاشة الرئيسية»</b>",MK.sheet())}${st(3,"اضغط <b>«إضافة»</b>",MK.add(ico))}${done(4)}</ol>`;
   if(k==="prompt")return `<button type="button" class="primary wide" id="doInstall">ثبّت الحين</button>`;
-  if(k==="android")return `<ol class="ins-steps">${st(IIC.vdots,"اضغط <b>⋮</b> فوق في المتصفح")}${st(IIC.plus,"اختر <b>«تثبيت التطبيق»</b> أو «إضافة إلى الشاشة الرئيسية»")}${st(IIC.app,"افتح FORMA من الأيقونة اللي على شاشتك")}</ol>`;
+  if(k==="android")return `<ol class="ins-steps">${st(1,"اضغط <b>⋮</b> فوق في المتصفح",`<div class="mk mk-bar" dir="${sysRTL?"rtl":"ltr"}"><span class="mk-url">forma-app1.github.io</span><span class="mk-dot hot">⋮</span></div>`)}${st(2,"اختر <b>«تثبيت التطبيق»</b> أو «إضافة إلى الشاشة الرئيسية»",MK.andMenu())}${st(3,"اضغط <b>«تثبيت»</b>")}${done(4)}</ol>`;
   return "";
+}
+/* سهم يتحرك ويأشر على الزر الحقيقي في المتصفح */
+function insArrow(k){
+  let pos="";
+  if(k==="ios")pos=ios26?(sysRTL?"bl":"br"):"bc";
+  else if(k==="ios-other"||k==="inapp"||k==="android")pos=sysRTL?"tl":"tr";
+  if(!pos)return "";
+  const down=pos[0]==="b";
+  return `<div class="ins-arrow ${pos}" aria-hidden="true"><span>${k==="inapp"?"افتح من هنا":"ابدأ من هنا"}</span><svg viewBox="0 0 24 24">${down?'<path d="M12 4v15M6 13l6 6 6-6"/>':'<path d="M12 20V5M6 11l6-6 6 6"/>'}</svg></div>`;
 }
 function vInstall(){
   const k=instKind(),ico=(document.querySelector('link[rel="apple-touch-icon"]')||{}).href||"apple-touch-icon.png";
+  const T=window.FORMA_TRIAL,l=T&&T.left();
   return `<div class="ins">
     <img class="ins-logo" src="${ico}" alt="" width="76" height="76">
-    <h1>ثبّت FORMA على جوالك</h1>
+    <h1>${k==="inapp"?"افتح الرابط في المتصفح":"ثبّت FORMA بأقل من دقيقة"}</h1>
+    ${l>0?`<span class="pill ins-free">مجاني للكل لين ${new Date(Date.now()+l).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn",{day:"numeric",month:"long"})}</span>`:""}
     <div class="sub">يصير تطبيق على شاشتك. يفتح بشاشة كاملة ويشتغل بدون نت.</div>
     <div class="card">${instSteps(k)}</div>
-    ${isIOS?`<p class="note">ثبّته قبل تبدأ. اللي تسجله في المتصفح ما ينتقل للتطبيق.</p>`:""}
+    ${isIOS&&k!=="inapp"?`<p class="note">ثبّته قبل تبدأ. اللي تسجله في المتصفح ما ينتقل للتطبيق.</p>`:""}
     ${mustInstall()?`<p class="note center">بعد ما تثبته، افتحه من شاشتك واكتب كود التفعيل هناك.</p>`:`<button type="button" class="ghost wide" id="instSkip">أكمل في المتصفح</button>`}
-  </div>`;
+  </div>${insArrow(k)}`;
 }
 
 /* شاشة افتتاحية للآيفون: تنرسم مرة وحدة لمقاس الجهاز وتنقرا وقت الإضافة للشاشة */
