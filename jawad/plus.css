@@ -379,3 +379,8 @@ nav .in>button:not(.fab){flex:1;min-width:0}
 .ubars i{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;font-style:normal;min-width:0}
 .ubars b{display:block;flex:none;width:100%;min-height:2px;border-radius:5px 5px 2px 2px;background:var(--accent)}
 .ubars em{font-style:normal;font-size:9.5px;color:var(--muted);order:-1}
+/* 4.3.3 مسار البداية */
+.frow{display:grid;grid-template-columns:7.5em 1fr 2.2em;align-items:center;gap:8px;font-size:13px}
+.frow i{height:10px;border-radius:6px;background:var(--track);overflow:hidden;direction:rtl;display:flex}
+.frow b{display:block;height:100%;background:var(--accent);border-radius:6px}
+.frow .num{text-align:left;color:var(--muted)}
