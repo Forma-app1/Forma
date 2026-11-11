@@ -114,12 +114,13 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3.2";
+const VER="4.3.3";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
     const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:!!d.trained};
-    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train].join("");
+    o.step=S.profile?5:Math.min(5,+(PF.loadJSON("forma_stp")||0));
+    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train,o.step].join("");
     if(PF.loadJSON("forma_ping")===sig)return;
     PF.saveJSON("forma_ping",sig);
     const ua=navigator.userAgent||"";
@@ -289,12 +290,14 @@ iosSplash();
 /* ===== الإعداد ===== */
 const welcomeLogo=()=>{const el=document.querySelector("#hdr .logo");return el?el.innerHTML.replace(/fh(bg|gr|or)/g,"fw$1"):"FORMA"};
 let ob=null;
+/* مرحلة البداية: 1 شاشة التثبيت، 2 و3 و4 خطوات التسجيل، 5 خلص. نحفظ أعلى مرحلة وصلها */
+function markStep(n){try{const c=+(PF.loadJSON("forma_stp")||0);if(n>c){PF.saveJSON("forma_stp",n);setTimeout(pingUsage,0)}}catch(e){}}
 function vSetup(){
   const p=S.profile||{};
   if(!ob)ob={name:p.name||"",sex:p.sex||"ذكر",age:p.age||"",h:p.h||"",w:p.w||"",tw:p.tw||"",act:p.act??2,goal:p.goal??0,prog:S.prog||DEFP};
   const edit=!!S.profile;
-  if(!edit&&!(ob.step>0)&&needGate())return vInstall();
-  if(!edit)return vWizard();
+  if(!edit&&!(ob.step>0)&&needGate()){markStep(1);return vInstall()}
+  if(!edit){markStep(2+(ob.step||0));return vWizard()}
   return `
   <div class="welcome">${edit?"":`<div class="logo" aria-label="FORMA">${welcomeLogo()}</div>`}<h1>${edit?"عدّل بياناتك":"نبدأ بخطتك"}</h1><div class="sub">${edit?"نعيد حساب سعراتك وبروتينك على البيانات الجديدة.":"دقيقة وحدة. نحسب لك السعرات والبروتين ونجهز برنامجك."}</div></div>
   <form id="setup" class="stack" novalidate>
@@ -1183,6 +1186,9 @@ function openStats(){
         ${st("مجاني تحوّل لمشتري",pc(r.converted,r.free_devices),`${r.converted} من ${r.free_devices}`)}
         ${st("أكواد مفعّلة",r.codes_active,`${r.codes_7d} آخر 7 أيام`)}
       </div>
+      ${r.f_base?`<div class="card stack"><span class="lbl">وين يوقفون؟ (من تحديث 4.3.3)</span>
+        ${[["فتحوا التطبيق",r.f_base],["بدأوا التسجيل",r.f_s1],["الخطوة الثانية",r.f_s2],["الخطوة الثالثة",r.f_s3],["كمّلوا",r.f_done]].map(([l,v])=>`<div class="frow"><span>${l}</span><i><b style="width:${Math.round(v/r.f_base*100)}%"></b></i><span class="num">${v}</span></div>`).join("")}
+        <span class="sub">${r.f_install} وقفوا عند شاشة التثبيت · ${r.pwa} فتحوه من الشاشة الرئيسية</span></div>`:""}
       <div class="card stack"><span class="lbl">النشطين آخر 14 يوم</span>
         <div class="ubars">${ds.map(d=>`<i title="${d.day}: ${d.act}"><b style="height:calc((100% - 14px) * ${(d.act/mx).toFixed(3)})"></b><em class="num">${d.act}</em></i>`).join("")}</div>
         <div class="row" dir="ltr"><span class="sub num">${esc(String(ds[0]?.day||"").slice(5))}</span><span class="sub num">${esc(String(td.day||"").slice(5))}</span></div></div>
