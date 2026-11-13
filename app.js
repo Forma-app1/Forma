@@ -572,8 +572,8 @@ function vFood(){
   <div id="results"></div>
   <div class="card stack flog">
     <div class="row"><h2>${foodDay===today()?"أكلك اليوم":"أكل "+label}</h2><span class="sub num">${fmt(t.k)} سعرة</span></div>
-    ${used.length?used.map(m=>{const es=entries.map((e,i)=>({e,i})).filter(o=>o.e.meal===m),mk=es.reduce((a,o)=>a+macrosOf(eFood(o.e),o.e.amt).k,0);
-      return `<div class="meal-g m${MEALS.indexOf(m)}"><div class="meal-h"><h3>${m} <span class="sub num">${fmt(mk)}</span></h3><button class="ghost" data-savemeal="${m}">احفظها كوجبة</button></div>${es.map(o=>{const f=eFood(o.e),mm=macrosOf(f,o.e.amt);
+    ${used.length?used.map(m=>{const es=entries.map((e,i)=>({e,i})).filter(o=>o.e.meal===m),tm=es.reduce((a,o)=>{const x=macrosOf(eFood(o.e),o.e.amt);a.k+=x.k;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a},{k:0,p:0,c:0,f:0});
+      return `<div class="meal-g m${MEALS.indexOf(m)}"><div class="meal-h"><h3>${m} <span class="sub num">${fmt(tm.k)}</span> ${mx(tm.p,tm.c,tm.f)}</h3><button class="ghost" data-savemeal="${m}">احفظها كوجبة</button></div>${es.map(o=>{const f=eFood(o.e),mm=macrosOf(f,o.e.amt);
         return `<div class="item fi"><span class="n">${esc(f.n)}<small>${f.src==="photo"?`من صورة${f.g?" · "+fmt(f.g)+" جم":""}`:amtLabel(f,o.e.amt)}${f.store&&RESTS.includes(f.store)?" · "+esc(f.store):""}</small>${mx(mm.p,f.c==null?null:mm.c,f.f==null?null:mm.f)}</span><span class="kc num">${fmt(mm.k)}<small>سعرة</small></span><button class="del" data-del="${o.i}" aria-label="احذف ${esc(f.n)}">×</button></div>`}).join("")}</div>`}).join("")
       :`<div class="empty">ما سجلت شي ${foodDay===today()?"اليوم":""}. اكتب وش أكلت فوق.</div>`}
     <button id="copyY" class="ghost">${entries.length?`أضف أكل ${prev} هنا`:`نفس أكل ${prev}؟ انسخه بضغطة`}</button>

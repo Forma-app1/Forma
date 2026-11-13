@@ -7,7 +7,7 @@
   /* التجربة المجانية: 3 أيام بدون كود */
   var TRIAL="forma_trial",DAYS=3,BUY="https://1oxoxu.zid.store/";
   /* فترة مجانية للكل لين هذا التاريخ. بعدها لازم كود. غيّر التاريخ لو تبي تمددها */
-  var FREE_UNTIL=Date.parse("2026-11-17T23:59:59+03:00");
+  var FREE_UNTIL=Date.parse("2026-11-19T23:59:59+03:00");
   function trialLeft(){return Math.max(0,FREE_UNTIL-Date.now())}
   window.FORMA_TRIAL={left:function(){return get(KEY)?null:trialLeft()},buy:BUY};
   function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
