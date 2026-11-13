@@ -83,10 +83,10 @@ a.btn.primary{background:var(--accent);color:var(--on-accent)}
 .mx>span{display:inline-flex;align-items:baseline;gap:2px}
 .mx b{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .mp{color:var(--mp)}.mc{color:var(--mc)}.mf{color:var(--mf)}
-.item.fi{align-items:center}
-.item.fi .n small{font-size:12px}
+.item.fi{align-items:center;padding:9px 0}
+.item.fi .n small{font-size:12px;color:var(--muted);line-height:1.4}
 .kc{display:flex;flex-direction:column;align-items:center;font-family:var(--display);font-weight:800;font-size:16px;line-height:1.1;min-width:44px;color:var(--ink)}
-.kc small{font-size:10.5px;font-weight:500;color:var(--muted)}
+.kc small{font-size:10.5px;font-weight:600;color:var(--muted)}
 /* ملخص اليوم فوق صفحة الأكل */
 .fsum{position:sticky;top:calc(62px + env(safe-area-inset-top,0px));z-index:4;background:var(--surface);border-radius:22px;padding:12px 12px 14px;box-shadow:0 0 0 1px var(--line) inset,0 6px 18px rgba(0,0,0,.06)}
 .fs-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -176,9 +176,12 @@ a.btn.primary{background:var(--accent);color:var(--on-accent)}
 .ex-note{display:block;width:100%;margin-top:10px;font:inherit;font-size:16px;line-height:1.6;padding:10px 12px;border-radius:12px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--raise);color:var(--ink);resize:vertical;min-height:46px}
 .ex-note::placeholder{color:var(--muted)}
 .ex .last:empty{display:none}
-.meal-g{--mc:#0E7C80;border-radius:16px;padding:8px 12px 4px;margin-top:10px;background:color-mix(in srgb,var(--mc) 8%,transparent);border-inline-start:4px solid var(--mc)}
+.meal-g{--mc:#0E7C80;border-radius:16px;padding:9px 12px 6px;margin-top:12px;background:color-mix(in srgb,var(--mc) 8%,transparent);border-inline-start:4px solid var(--mc)}
 .meal-g .item{border-bottom-color:color-mix(in srgb,var(--mc) 18%,var(--line))}
-.meal-g .meal-h h3{color:var(--mc)}
+.meal-g .meal-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.meal-g .meal-h h3{color:var(--mc);display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14.5px;line-height:1.25}
+.meal-g .meal-h h3 .sub{font-size:12.5px;color:var(--muted);font-weight:600}
+.meal-g .meal-h .mx{margin-top:0;align-self:center;font-size:11.5px;gap:7px}
 .meal-g.m0{--mc:#D08A1E}
 .meal-g.m1{--mc:#0E7C80}
 .meal-g.m2{--mc:#5B6CC9}
@@ -327,12 +330,12 @@ nav button[aria-current=page] svg{background:var(--accent-soft);border-radius:12
 .hero2{padding:18px}
 .h2-top{display:flex;align-items:center;gap:18px}
 .h2-st{display:flex;flex-direction:column;gap:11px;flex:1;min-width:0}
-.h2-st span{display:block;font-size:11.5px;font-weight:700;color:var(--muted)}
+.h2-st span{display:block;font-size:12px;font-weight:700;color:var(--muted)}
 .h2-st b{font:800 19px var(--display);color:var(--ink)}.h2-st b small{font-size:12px;font-weight:700}
 .h2-st b.acc{color:var(--accent-ink)}
 .h2-m{display:flex;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
 .mring{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
-.mring span{font-size:11.5px;font-weight:700;color:var(--ink)}.mring i{font-style:normal;color:var(--muted);font-weight:400}
+.mring span{font-size:12px;font-weight:700;color:var(--ink)}.mring i{font-style:normal;color:var(--muted);font-weight:500;font-size:11px}
 .mring.p .ring{--c:var(--accent)}.mring.c .ring{--c:#FFB020}.mring.f .ring{--c:#FF6B6B}
 .h2-sug{width:100%;margin-top:12px;padding:10px;border-radius:14px;background:var(--accent-soft);color:var(--accent-ink);font-weight:800;box-shadow:none}
 /* الأزرار السريعة */
