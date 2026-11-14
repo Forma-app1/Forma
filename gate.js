@@ -1,4 +1,4 @@
-// FORMA: شاشة كود التفعيل. نسخة جواد ما تحمّل هذا الملف.
+// FORMA: شاشة كود التفعيل. نسخة جواد تحمّله بعد، بس بدون الفترة المجانية.
 // كل كود يشتغل على جهازين بحد أقصى. التحقق من Supabase، وبعد التفعيل يشتغل بدون نت.
 (function(){
   var API="https://ywqguielxzzpqubgneoa.supabase.co/rest/v1/rpc/activate";
@@ -8,7 +8,8 @@
   var TRIAL="forma_trial",DAYS=3,BUY="https://1oxoxu.zid.store/";
   /* فترة مجانية للكل لين هذا التاريخ. بعدها لازم كود. غيّر التاريخ لو تبي تمددها */
   var FREE_UNTIL=Date.parse("2026-11-19T23:59:59+03:00");
-  function trialLeft(){return Math.max(0,FREE_UNTIL-Date.now())}
+  var PRIV=!!(window.FORMA_CONFIG&&window.FORMA_CONFIG.store);
+  function trialLeft(){return PRIV?0:Math.max(0,FREE_UNTIL-Date.now())}
   window.FORMA_TRIAL={left:function(){return get(KEY)?null:trialLeft()},buy:BUY};
   function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
   function set(k,v){try{localStorage.setItem(k,v)}catch(e){}}

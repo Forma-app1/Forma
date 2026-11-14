@@ -115,7 +115,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.4.1";
+const VER="4.4.2";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;

@@ -18,7 +18,7 @@ function serve() {
 
 const VARIANTS = [
   { name: "public /", path: "/", key: "forma-v2", extra: { forma_lic: "CI-TEST" } }, // license so the gate never blocks (free period ends 2026-11-19)
-  { name: "jawad /jawad/", path: "/jawad/", key: "forma-jawad", extra: {} },
+  { name: "jawad /jawad/", path: "/jawad/", key: "forma-jawad", extra: { forma_lic: "CI-TEST" } }, // jawad copy needs a code too
 ];
 const TABS = ["today", "food", "train", "progress"];
 
