@@ -114,7 +114,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3.3";
+const VER="4.3.6";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -804,15 +804,40 @@ function addSug(i){const c=lastSug[i];if(!c)return;const k=today(),meal=defaultM
 
 /* ===== التمرين ===== */
 let live=null,restAt=null,restTimer=null;
+/* مسودة التمرين: كل وزن وكل ✓ ينحفظ في الجهاز على طول، لكل جلسة لحالها.
+   تبقى لو قفل التطبيق أو انتقل لجلسة ثانية أو تزامنت البيانات. تنمسح بس لما يخلص التمرين */
+const LKEY=STORE+"-live";
+let drafts=(()=>{const d=PF.loadJSON(LKEY);return d&&typeof d==="object"&&!Array.isArray(d)?d:{}})();
+function saveDrafts(){if(live)live.t=Date.now();PF.saveJSON(LKEY,drafts)}
+function draftFor(si){const k=S.prog+"|"+si;let d=drafts[k];if(!d||typeof d!=="object"||!d.v){d=drafts[k]={k,prog:S.prog,s:si,v:{},open:0,start:null,t:Date.now()}}return d}
+const draftHasSets=d=>Object.values(d.v||{}).some(x=>x&&x.d);
+/* مسودة قديمة (أكثر من 8 ساعات بدون تعديل): لو فيها مجموعات تمت تنحفظ في السجل بتاريخها، وإلا تنحذف */
+function settleDrafts(){
+  let ch=false;const now=Date.now();
+  Object.keys(drafts).forEach(k=>{const d=drafts[k];
+    if(!d||typeof d!=="object"||!d.v){delete drafts[k];ch=true;return}
+    if(now-(d.t||0)<8*3600e3)return;
+    if(draftHasSets(d)){
+      const sets={};Object.keys(d.v).forEach(kk=>{const v=d.v[kk];if(!v||!v.d)return;const p=kk.split("|"),j=+p.pop(),n=p.join("|"),kg=+v.kg||0,r=+v.r||0;if(kg>0||r>0)(sets[n]=sets[n]||[])[j]=[kg,r]});
+      Object.keys(sets).forEach(n=>{sets[n]=sets[n].filter(Boolean);if(!sets[n].length)delete sets[n]});
+      if(Object.keys(sets).length){
+        const T=key(new Date(d.start||d.t||now));let vol=0;Object.values(sets).forEach(a=>a.forEach(x=>vol+=x[0]*x[1]));
+        const prs=Object.keys(sets).filter(n=>{const b=bestFor(n),top=Math.max(...sets[n].map(x=>x[0]));return b&&top>b});
+        S.history.push({date:T,prog:d.prog||S.prog,s:d.s||0,sets,dur:null,vol:Math.round(vol),prs,auto:1});day(T).trained=true;
+        if(d.prog===S.prog&&d.s===sessIdx())S.sessionIdx=(d.s+1)%prog().sessions.length;
+        S._ts=now;ch="hist"}}
+    delete drafts[k];if(!ch)ch=true});
+  if(ch){PF.saveJSON(LKEY,drafts);if(ch==="hist"){save();toast("حفظنا تمرينك اللي ما خلّصته في السجل")}}
+}
 function vTrain(){
   const P=prog(),si=sessIdx(),s=P.sessions[si];
-  if(!live||live.k!==S.prog+si)live={k:S.prog+si,v:{},open:0,start:null};
+  if(!live||live.k!==S.prog+"|"+si)live=draftFor(si);
   const doneCnt=(n,sets)=>{let c=0;for(let j=0;j<sets;j++)if(live.v[n+"|"+j]&&live.v[n+"|"+j].d)c++;return c};
   const tot=s.ex.reduce((a,e)=>a+e[1],0),dn=s.ex.reduce((a,e,i)=>a+doneCnt(exName(si,i),e[1]),0);
   return `
   <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
   <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
-  ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
+  ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span class="wk-saved">محفوظ تلقائيا ✓</span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
   <div class="card ex-list">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
     const up=last&&last.length>=sets&&last.slice(0,sets).every(x=>x[1]>=top),dc=doneCnt(n,sets),complete=dc>=sets,open=live.open===i;
     if(!open)return `<button class="ex ex-c ${complete?"ok":""}" data-exo="${i}"><span class="ex-ci" aria-hidden="true">${complete?"✓":i+1}</span><span class="ex-cn"><b dir="ltr">${esc(n)}</b>${arN(n)?`<i class="ex-ar">${arN(n)}</i>`:""}<small class="num">${sets} مجموعات · ${esc(reps)} عدات${up?` · <b class="up">زد الوزن</b>`:""}${S.exNotes[n]?" · فيه ملاحظة":""}</small></span><span class="ex-cc num">${complete?"خلص":dc?dc+"/"+sets:""}</span></button>`;
@@ -886,7 +911,7 @@ function finish(){
   let vol=0,nsets=0;Object.values(sets).forEach(a=>a.forEach(x=>{vol+=x[0]*x[1];nsets++}));
   const entry={date:T,prog:S.prog,s:si,sets,dur,vol:Math.round(vol),prs};
   S.history.push(entry);day(T).trained=true;
-  S.sessionIdx=(si+1)%P.sessions.length;live=null;restAt=null;save();tab="today";render();
+  S.sessionIdx=(si+1)%P.sessions.length;delete drafts[live.k];PF.saveJSON(LKEY,drafts);live=null;restAt=null;save();tab="today";render();
   openDone(entry,sName(s.n),P.sessions[S.sessionIdx]);
 }
 /* احتفال: اهتزاز + قصاصات ملونة */
@@ -1325,9 +1350,9 @@ $("#view").addEventListener("click",e=>{
       const best=bestFor(n);live.prs=live.prs||{};if(best&&+v.kg>best&&!live.prs[n]){live.prs[n]=1;celebrate(`رقم قياسي جديد! \u2068${n}\u2069 ${v.kg} كغ`)}
       const sets=i>=0?ex[i][1]:0;let all=true;for(let x=0;x<sets;x++)if(!(live.v[n+"|"+x]&&live.v[n+"|"+x].d))all=false;
       if(all&&i>=0){const nxt=ex.findIndex((e,x)=>{if(x<=i)return false;const nn=exName(si,x);for(let y=0;y<e[1];y++)if(!(live.v[nn+"|"+y]&&live.v[nn+"|"+y].d))return true;return false});
-        if(nxt>=0){live.open=nxt;renderTrainAt();return}}}
-    renderTrainKeep();return}
-  if(d.exo!==undefined){live.open=+d.exo;return renderTrainAt()}
+        if(nxt>=0){live.open=nxt;saveDrafts();renderTrainAt();return}}}
+    saveDrafts();renderTrainKeep();return}
+  if(d.exo!==undefined){live.open=+d.exo;saveDrafts();return renderTrainAt()}
   if(d.hist!==undefined)return openHist(d.hist);
   if(d.sug){sugFilter=d.sug;return render()}
   if(d.sugadd!==undefined)return addSug(+d.sugadd);
@@ -1381,12 +1406,13 @@ $("#view").addEventListener("input",e=>{
     if(f==="sn")ed.sessions[+si].n=v;else if(f==="r")ed.sessions[+si].ex[+i][2]=v;else if(f==="pn")ed.name=v;else if(f==="wk")ed.weeks=v;return}
   if(e.target.dataset.note!=null){const nn=e.target.dataset.note,vv=e.target.value;e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";if(vv.trim())S.exNotes[nn]=vv;else delete S.exNotes[nn];save();return}
   const k=e.target.dataset.k;
-  if(k){const parts=k.split("|"),f=parts.pop(),j=parts.pop(),n=parts.join("|");const v=live.v[n+"|"+j]=live.v[n+"|"+j]||{};v[f]=e.target.value;
+  if(k){const parts=k.split("|"),f=parts.pop(),j=parts.pop(),n=parts.join("|");const v=live.v[n+"|"+j]=live.v[n+"|"+j]||{};v[f]=e.target.value;saveDrafts();
     if(f==="kg"){const best=+e.target.dataset.best;e.target.classList.toggle("pr",best>0&&+e.target.value>best)}}
 });
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="today")render()});
 /* خانات الأرقام: تحديد الرقم كامل أول ما تضغط، عشان تكتب الجديد على طول بدون ما تمسح */
 document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&&t.type==="number"&&t.value!==""){setTimeout(()=>{try{t.select()}catch(x){}},0)}});
+if(S.profile)try{settleDrafts()}catch(e){}
 render();
 if(fidDirty)saveLocal();
 initSync();
