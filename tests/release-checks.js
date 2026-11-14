@@ -1,4 +1,4 @@
-// Release checks: mirror parity, cache bump, frozen food ids, syntax, referenced files exist.
+// Release checks: shared app files, cache bump, frozen food ids, syntax, referenced files exist.
 // BASE_REF (e.g. origin/main or a commit sha) enables the "cache was bumped" check.
 const fs = require("fs"), path = require("path"), vm = require("vm"), cp = require("child_process");
 const { ROOT, check } = require("./lib");
@@ -9,8 +9,11 @@ const git = args => cp.execFileSync("git", args, { cwd: ROOT, encoding: "utf8", 
 module.exports = function releaseChecks() {
   console.log("\n[release checks] root=" + ROOT);
 
-  // 1. jawad/ mirror must be byte-identical
-  for (const f of ["app.js", "plus.css"]) check(`${f} identical in root and jawad/`, rd(f) === rd("jawad/" + f));
+  // 1. jawad/ uses the shared app.js and plus.css (one source of truth, no copies)
+  const jh = rd("jawad/index.html");
+  check("jawad/index.html loads ../app.js", jh.includes('src="../app.js"'));
+  check("jawad/index.html loads ../plus.css", jh.includes('href="../plus.css"'));
+  for (const f of ["app.js", "plus.css"]) check(`no stale copy jawad/${f}`, !fs.existsSync(path.join(ROOT, "jawad", f)));
 
   // 2. cache strings parse and carry the same version
   const cacheOf = src => (src.match(/const CACHE="([^"]+)"/) || [])[1];
