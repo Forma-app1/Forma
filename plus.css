@@ -433,3 +433,6 @@ nav .in>button:not(.fab){flex:1;min-width:0}
 @keyframes insb{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
 @keyframes inst{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @media (prefers-reduced-motion: reduce){.ins-arrow,.mk .hot,.mk-top .hot{animation:none}}
+
+/* 4.3.6 حفظ التمرين */
+.wk-saved{color:var(--accent);font-weight:700}
