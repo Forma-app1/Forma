@@ -108,18 +108,20 @@ function fixFids(){
     if(rc.join()!==(S.recent||[]).join()){S.recent=rc;ch=true}}
   return ch;
 }
-function normalizeFix(){if(fixFids()){S._ts=Date.now();fidDirty=true}}
+/* التصحيح ثابت ويتكرر على أي نسخة تنسحب، فما نغيّر وقت التعديل (عشان ما نغلب نسخة أحدث بالسحابة) */
+function normalizeFix(){if(fixFids())fidDirty=true}
 normalize();normalizeFix();
 function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. تأكد إن التخزين مفعّل في المتصفح")}
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.3.6";
+const VER="4.4.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
     const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:!!d.trained};
-    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train].join("");
+    o.step=S.profile?5:Math.min(5,+(PF.loadJSON("forma_stp")||0));
+    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train,o.step].join("");
     if(PF.loadJSON("forma_ping")===sig)return;
     PF.saveJSON("forma_ping",sig);
     const ua=navigator.userAgent||"";
@@ -321,12 +323,14 @@ iosSplash();
 /* ===== الإعداد ===== */
 const welcomeLogo=()=>{const el=document.querySelector("#hdr .logo");return el?el.innerHTML.replace(/fh(bg|gr|or)/g,"fw$1"):"FORMA"};
 let ob=null;
+/* مرحلة البداية: 1 شاشة التثبيت، 2 و3 و4 خطوات التسجيل، 5 خلص. نحفظ أعلى مرحلة وصلها */
+function markStep(n){try{const c=+(PF.loadJSON("forma_stp")||0);if(n>c){PF.saveJSON("forma_stp",n);setTimeout(pingUsage,0)}}catch(e){}}
 function vSetup(){
   const p=S.profile||{};
   if(!ob)ob={name:p.name||"",sex:p.sex||"ذكر",age:p.age||"",h:p.h||"",w:p.w||"",tw:p.tw||"",act:p.act??2,goal:p.goal??0,prog:S.prog||DEFP};
   const edit=!!S.profile;
-  if(!edit&&!(ob.step>0)&&needGate())return vInstall();
-  if(!edit)return vWizard();
+  if(!edit&&!(ob.step>0)&&needGate()){markStep(1);return vInstall()}
+  if(!edit){markStep(2+(ob.step||0));return vWizard()}
   return `
   <div class="welcome">${edit?"":`<div class="logo" aria-label="FORMA">${welcomeLogo()}</div>`}<h1>${edit?"عدّل بياناتك":"نبدأ بخطتك"}</h1><div class="sub">${edit?"نعيد حساب سعراتك وبروتينك على البيانات الجديدة.":"دقيقة وحدة. نحسب لك السعرات والبروتين ونجهز برنامجك."}</div></div>
   <form id="setup" class="stack" novalidate>
@@ -1209,7 +1213,7 @@ function vSettings(){
 }
 /* ===== السحابة ===== */
 let syncState="off";
-const SYNC_L={ok:"محفوظة ✓",syncing:"يزامن...",offline:"بدون نت",error:"ما تزامنت",nolic:"الكود موقف",off:"مو مربوط"};
+const SYNC_L={big:"البيانات كبيرة، كلمنا",ok:"محفوظة ✓",syncing:"يزامن...",offline:"بدون نت",error:"ما تزامنت",nolic:"الكود موقف",off:"مو مربوط"};
 function cloudCard(){
   if(!CL)return "";
   const c=CL.code();
@@ -1240,6 +1244,9 @@ function openStats(){
         ${st("مجاني تحوّل لمشتري",pc(r.converted,r.free_devices),`${r.converted} من ${r.free_devices}`)}
         ${st("أكواد مفعّلة",r.codes_active,`${r.codes_7d} آخر 7 أيام`)}
       </div>
+      ${r.f_base?`<div class="card stack"><span class="lbl">وين يوقفون؟ (من تحديث 4.4)</span>
+        ${[["فتحوا التطبيق",r.f_base],["بدأوا التسجيل",r.f_s1],["الخطوة الثانية",r.f_s2],["الخطوة الثالثة",r.f_s3],["كمّلوا",r.f_done]].map(([l,v])=>`<div class="frow"><span>${l}</span><i><b style="width:${Math.round(v/r.f_base*100)}%"></b></i><span class="num">${v}</span></div>`).join("")}
+        <span class="sub">${r.f_install} وقفوا عند شاشة التثبيت · ${r.pwa} فتحوه من الشاشة الرئيسية</span></div>`:""}
       <div class="card stack"><span class="lbl">النشطين آخر 14 يوم</span>
         <div class="ubars">${ds.map(d=>`<i title="${d.day}: ${d.act}"><b style="height:calc((100% - 14px) * ${(d.act/mx).toFixed(3)})"></b><em class="num">${d.act}</em></i>`).join("")}</div>
         <div class="row" dir="ltr"><span class="sub num">${esc(String(ds[0]?.day||"").slice(5))}</span><span class="sub num">${esc(String(td.day||"").slice(5))}</span></div></div>
@@ -1260,7 +1267,7 @@ function initSync(){
   if(!CL)return;
   CL.sync.init({slot:STORE,get:()=>S,choose:chooseData,
     apply:d=>{S=d&&typeof d==="object"?d:{};normalize();normalizeFix();saveLocal();ob=null;live=null;ed=null;if(S.profile&&(tab==="setup"||tab==="plan"))tab="today";if(!S.profile)tab="setup";render();toast("رجعت بياناتك من السحابة")},
-    onStatus:st=>{syncState=st;const el=$("#syncSt");if(el){el.textContent=SYNC_L[st]||"";el.classList.toggle("mute",st!=="ok")}}});
+    onStatus:st=>{syncState=st;if(st!=="syncing")settleOnce();const el=$("#syncSt");if(el){el.textContent=SYNC_L[st]||"";el.classList.toggle("mute",st!=="ok")}}});
 }
 async function linkCode(){
   const i=$("#licIn"),b=$("#licGo");if(!i||!CL)return;
@@ -1412,7 +1419,10 @@ $("#view").addEventListener("input",e=>{
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&tab==="today")render()});
 /* خانات الأرقام: تحديد الرقم كامل أول ما تضغط، عشان تكتب الجديد على طول بدون ما تمسح */
 document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&&t.type==="number"&&t.value!==""){setTimeout(()=>{try{t.select()}catch(x){}},0)}});
-if(S.profile)try{settleDrafts()}catch(e){}
+/* المسودات القديمة تنحفظ بعد أول مزامنة، عشان ما نرفع نسخة قديمة فوق شغل جهاز ثاني */
+let settled=false;
+function settleOnce(){if(settled)return;settled=true;if(!S.profile)return;try{settleDrafts();if(tab==="train"||tab==="today")render()}catch(e){}}
+if(!(CL&&CL.code&&CL.code()))settleOnce();
 render();
 if(fidDirty)saveLocal();
 initSync();
