@@ -53,6 +53,7 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const dateAr=k=>{try{return parseKey(k).toLocaleDateString("ar-u-nu-latn",{day:"numeric",month:"long"})}catch(e){return k}};
 function toast(msg){document.querySelectorAll(".toast").forEach(t=>t.remove());const t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 const ICON={
+  drop:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>`,
 flame:'<svg viewBox="0 0 24 24" aria-hidden="true"><path class="flame" d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-6 1-9.5z"/></svg>',
 mic:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
 scan:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 8v8M11 8v8M13.5 8v8M16 8v8"/></svg>',
@@ -115,11 +116,11 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.4.2";
+const VER="4.5.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
-    const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:!!d.trained};
+    const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:trainedOn(T)};
     o.step=S.profile?5:Math.min(5,+(PF.loadJSON("forma_stp")||0));
     const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train,o.step].join("");
     if(PF.loadJSON("forma_ping")===sig)return;
@@ -147,9 +148,11 @@ function targets(p,adj){
   kcal+=adj||0;
   kcal=Math.max(kcal,p.sex==="أنثى"?1200:1500);
   kcal=Math.round(kcal/50)*50;
-  const pr=r5(1.6*ref);
-  const fat=r5(Math.max(0.25*kcal/9,0.6*p.w));
-  const carb=Math.max(0,r5((kcal-pr*4-fat*9)/4));
+  let pr=r5(1.6*ref);
+  let fat=r5(Math.max(0.25*kcal/9,0.6*p.w));
+  let carb=Math.max(0,r5((kcal-pr*4-fat*9)/4));
+  /* توزيع يختاره المستخدم: نسب من السعرات (بروتين وكارب 4 سعرات للجرام، دهون 9) */
+  const m=p.macro;if(m&&m.p+m.c+m.f===100){pr=r5(kcal*m.p/400);carb=r5(kcal*m.c/400);fat=r5(kcal*m.f/900)}
   return {kcal,p:pr,c:carb,f:fat,tdee:Math.round(tdee),bmr:Math.round(bmr),bmi:r1(bmi),ref:r1(ref)};
 }
 const G=()=>targets(S.profile,S.adj);
@@ -166,7 +169,7 @@ const foodSub=f=>{const unit=f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملع�
 function srcTag(f){if(f.code)return `<span class="pill mute">من الباركود</span>`;const s=f.store&&SOURCES[f.store];if(!s)return "";const off=s[1].startsWith("رسمي");return `<span class="pill ${off?"":"mute"}">${off?"قيم رسمية":"قيم تقديرية"}</span>`}
 
 /* ===== الأيام والسلسلة ===== */
-const active=k=>!!(S.days[k]&&((S.days[k].food||[]).length||S.days[k].trained));
+const active=k=>!!(S.days[k]&&(S.days[k].food||[]).length)||trainedOn(k);
 function streak(){let n=0,d=new Date();if(!active(key(d)))d=addDays(d,-1);while(active(key(d))){n++;d=addDays(d,-1)}return n}
 function weightsSorted(){return Object.keys(S.days).sort().filter(k=>S.days[k].weight).map(k=>[k,S.days[k].weight])}
 function avgWindow(endKey,len){const ws=[];for(let i=0;i<len;i++){const w=S.days[key(addDays(parseKey(endKey),-i))]?.weight;if(w)ws.push(w)}return ws.length?{avg:ws.reduce((a,b)=>a+b,0)/ws.length,n:ws.length}:null}
@@ -489,7 +492,7 @@ function vToday(){
   }
   const ring=(p,cls,inner)=>`<div class="ring ${cls}" style="--p:${p.toFixed(3)}"><div>${inner}</div></div>`;
   const mr=(cls,name,v,goal)=>`<div class="mring ${cls}">${ring(clamp(v/goal,0,1),"sm",`<b class="num">${fmt(v)}</b>`)}<span>${name} <i class="num">/ ${goal}</i></span></div>`;
-  const tr=S.days[T]?.trained,pl=clamp(progDone()/progTotal()*100,0,100);
+  const tr=trainedOn(T),pl=clamp(progDone()/progTotal()*100,0,100);
   return `
   <div class="th"><span class="sub">${dateAr(T)}${st?` · <b class="hotc">${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض</b>`:""}</span><h1>${greet} ${esc(S.profile.name)}</h1></div>
   ${install}
@@ -500,14 +503,30 @@ function vToday(){
     <div class="h2-m">${mr("p","بروتين",t.p,g.p)}${mr("c","كارب",t.c,g.c)}${mr("f","دهون",t.f,g.f)}</div>
     <button class="ghost h2-sug" id="openSug">محتار وش تاكل؟ ‹</button>
   </div>
+  ${dayQuick(T)}
   ${quickActs()}
   <div class="wo"><div class="wo-l"><span class="lbl">تمرين اليوم · ${esc(P.ar)}</span><b dir="auto">${esc(sName(nx.n))}</b><span class="sub">${nx.ex.length} تمارين${nx.day?" · "+nx.day:""}</span><div class="wo-p" title="تقدمك في البرنامج"><i style="width:${pl}%"></i></div></div>
     ${tr?`<span class="pill">تمرّنت اليوم ✓</span>`:`<button class="wo-go" data-go="train">ابدأ</button>`}</div>
   ${coachCard()}
   ${rv?`<div class="card review stack"><div class="row"><h2>مراجعة الأسبوع</h2><span class="pill ${rv.delta?"hot":""}">${rv.delta?(rv.delta>0?"+":"")+rv.delta+" سعرة":"على المسار"}</span></div><p class="note" style="color:var(--ink);font-size:14px">${rv.msg}</p>${rv.delta?`<div class="grid2"><button class="primary" id="rvApply">طبّق التعديل</button><button id="rvSkip">خله زي ما هو</button></div>`:`<button id="rvSkip">تمام</button>`}</div>`:""}
-  ${S.days[T]?.weight&&!wEdit?`<div class="card wrow"><div><span class="lbl">وزن اليوم</span><div class="nx-t"><b class="num">${r1(S.days[T].weight)} <small>كغ</small></b>${trend()?`<span class="sub">متوسط الأسبوع ${r1(trend().avg)}</span>`:""}</div></div><button class="ghost" id="wEdit">عدّل</button></div>`
-  :`<div class="card stack wcard"><div class="row"><h2>وزن اليوم</h2><span class="sub">الصبح، قبل الأكل</span></div>
-    <div class="row"><input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${S.days[T]?.weight??""}"><button class="primary" id="wSave">حفظ</button></div></div>`}`;
+`;
+}
+/* وزن اليوم والماء: بطاقة وحدة تحت الحلقات مباشرة، عشان توصلها بسرعة */
+const waterGoal=()=>clamp(Math.round(currentWeight()*35/250),6,16);
+function waterHTML(T){const n=S.days[T]?.water||0,g=waterGoal();
+  return `<div class="dq-h"><span class="lbl">ماء</span><span class="sub num">${n*250>=1000?r1(n*0.25)+" لتر":n*250+" مل"}</span></div>
+    <div class="dq-v"><b class="num">${n}</b><small class="num">/ ${g} أكواب</small></div>
+    <div class="wtr-bar" aria-hidden="true"><i style="width:${clamp(n/g*100,0,100)}%"></i></div>
+    <div class="dq-b"><button class="ghost wtr-m" id="waterSub" aria-label="شيل كوب" ${n?"":"disabled"}>−</button><button class="wtr-p" id="waterAdd">${ICON.drop} كوب</button></div>`}
+function dayQuick(T){
+  const w=S.days[T]?.weight;
+  const wHTML=w&&!wEdit?`<div class="dq-h"><span class="lbl">وزن اليوم</span><button class="ghost dq-e" id="wEdit">عدّل</button></div>
+      <div class="dq-v"><b class="num">${r1(w)}</b><small>كغ</small></div>
+      <span class="sub num">${trend()?"متوسط الأسبوع "+r1(trend().avg):"الصبح، قبل الأكل"}</span>`
+    :`<div class="dq-h"><span class="lbl">وزن اليوم</span><span class="sub">قبل الأكل</span></div>
+      <input type="number" step="0.1" inputmode="decimal" id="wIn" aria-label="وزن اليوم بالكيلو" placeholder="${r1(currentWeight())}" value="${w??""}">
+      <button class="primary" id="wSave">حفظ</button>`;
+  return `<div class="dq"><div class="card dq-c">${wHTML}</div><div class="card dq-c" id="wtr">${waterHTML(T)}</div></div>`;
 }
 const tipBase=()=>{const d=new Date();return (d.getDate()+d.getMonth()*31)%TIPS.length};
 let tipShift=0,lastSug=[];
@@ -528,8 +547,8 @@ function coachCtx(){
     daysSinceStart:daysBetween(p.start||T,T),trend:trend(),cw:currentWeight(),tw:p.tw,
     lastWeighDays:lastW?daysBetween(lastW,T):999,log7:logged.length,avgK7:avg("k"),avgP7:avg("p"),
     todayLogged:!!(S.days[T]?.food||[]).length,todayP:tdy.p,anyFood:Object.values(S.days).some(d=>(d.food||[]).length),
-    trainedToday:!!S.days[T]?.trained,daysSinceTrain:lastT?daysBetween(lastT,T):999,
-    week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
+    trainedToday:trainedOn(T),daysSinceTrain:lastT?daysBetween(lastT,T):999,
+    week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length+openSessions().filter(k=>daysBetween(k,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
 }
 function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return "";const d=Math.ceil(l/864e5);
   return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>فورما مجاني للكل لمدة أسبوع</b><small>${d<=1?"آخر يوم":d===2?"باقي يومين":"باقي "+d+" أيام"}. اشترِه مرة وحدة بدون اشتراك وكمّل على بياناتك.</small></span><i>اشترِ ‹</i></a>`}
@@ -816,6 +835,9 @@ let drafts=(()=>{const d=PF.loadJSON(LKEY);return d&&typeof d==="object"&&!Array
 function saveDrafts(){if(live)live.t=Date.now();PF.saveJSON(LKEY,drafts)}
 function draftFor(si){const k=S.prog+"|"+si;let d=drafts[k];if(!d||typeof d!=="object"||!d.v){d=drafts[k]={k,prog:S.prog,s:si,v:{},open:0,start:null,t:Date.now()}}return d}
 const draftHasSets=d=>Object.values(d.v||{}).some(x=>x&&x.d);
+/* تمارين بدأها وسجّل فيها مجموعات بس ما ضغط «خلصت»: تنحسب من تمارين الأسبوع واليوم */
+const openSessions=()=>Object.values(drafts).filter(d=>d&&d.v&&draftHasSets(d)).map(d=>key(new Date(d.start||d.t||Date.now())));
+const trainedOn=T=>!!(S.days[T]?.trained||openSessions().includes(T));
 /* مسودة قديمة (أكثر من 8 ساعات بدون تعديل): لو فيها مجموعات تمت تنحفظ في السجل بتاريخها، وإلا تنحذف */
 function settleDrafts(){
   let ch=false;const now=Date.now();
@@ -1131,11 +1153,26 @@ function edReset(){
 }
 
 /* ===== تقدمي ===== */
+/* توزيع البروتين والكارب والدهون كنسب من السعرات */
+const MPRE=[["متوازن",30,40,30],["بروتين عالي",40,35,25],["كارب قليل",35,20,45],["رياضي",25,55,20]];
+const macroPct=g=>{const k=g.p*4+g.c*4+g.f*9||1;return [Math.round(g.p*400/k),Math.round(g.c*400/k),Math.round(g.f*900/k)]};
+function macroUI(p,g){
+  const cur=p.macro?[p.macro.p,p.macro.c,p.macro.f]:macroPct(g);
+  return `<div class="field mx"><div class="row"><label>توزيع السعرات</label><span class="pill ${p.macro?"":"mute"}">${p.macro?"مخصص":"تلقائي"}</span></div>
+    <div class="mx-bar" aria-hidden="true"><i class="p" style="flex:${cur[0]}"></i><i class="c" style="flex:${cur[1]}"></i><i class="f" style="flex:${cur[2]}"></i></div>
+    <div class="mx-in">${[["p","بروتين",cur[0]],["c","كارب",cur[1]],["f","دهون",cur[2]]].map(([k,l,v])=>`<label class="mx-f ${k}"><span>${l}</span><div><input type="number" inputmode="numeric" data-mx="${k}" value="${v}" min="5" max="80" aria-label="${l} بالمية"><i>%</i></div></label>`).join("")}</div>
+    <div class="row"><span class="sub num" id="mxSum">المجموع ${cur[0]+cur[1]+cur[2]}%</span><span class="sub">لازم يكون 100%</span></div>
+    <div class="chips mx-pre">${MPRE.map((x,i)=>`<button class="chip" data-mxp="${i}">${x[0]} <small class="num">${x[1]}/${x[2]}/${x[3]}</small></button>`).join("")}</div>
+    <div class="grid2"><button class="primary" id="mxSave">احفظ التوزيع</button>${p.macro?`<button id="mxAuto">رجّعه تلقائي</button>`:`<span></span>`}</div></div>`;
+}
+function mxLive(){const v=k=>+($(`[data-mx="${k}"]`)||{}).value||0,a=[v("p"),v("c"),v("f")],sum=a[0]+a[1]+a[2],el=$("#mxSum");
+  if(el){el.textContent=`المجموع ${sum}%`;el.classList.toggle("bad",sum!==100)}
+  const bar=document.querySelector(".mx-bar");if(bar)[...bar.children].forEach((i,n)=>i.style.flex=Math.max(0,a[n]))}
 function weekSummary(){
   const T=today(),ks=[];for(let i=0;i<7;i++)ks.push(key(addDays(new Date(),-i)));
   const tt=ks.filter(k=>(S.days[k]?.food||[]).length).map(totals),avg=f=>tt.length?tt.reduce((a,x)=>a+x[f],0)/tt.length:null;
   const hs=S.history.filter(h=>!h.seed&&daysBetween(h.date,T)<7),tr=trend();
-  return {train:hs.length,plan:prog().days,k:avg("k"),p:avg("p"),dw:tr?tr.kgWeek:null,prs:hs.reduce((a,h)=>a+(h.prs||[]).length,0),days:tt.length};
+  return {train:hs.length+openSessions().filter(k=>daysBetween(k,T)<7).length,plan:prog().days,k:avg("k"),p:avg("p"),dw:tr?tr.kgWeek:null,prs:hs.reduce((a,h)=>a+(h.prs||[]).length,0),days:tt.length};
 }
 function vProgress(){
   const p=S.profile,ws=weightsSorted().slice(-28),tr=trend(),cw=currentWeight();
@@ -1191,6 +1228,7 @@ function vSettings(){
   <div class="card stack"><div class="row"><h2>أهدافك اليومية</h2><span class="pill">${p.customKcal?"مخصصة":"محسوبة تلقائي"}</span></div>
     <div class="mrow"><div><b>${fmt(g.kcal)}</b><span>سعرة</span></div><div><b>${g.p}</b><span>بروتين</span></div><div><b>${g.c}</b><span>كارب</span></div><div><b>${g.f}</b><span>دهون</span></div></div>
     <div class="field"><label for="ck">سعرات مخصصة (اختياري)</label><div class="row"><input type="number" inputmode="numeric" id="ck" placeholder="فاضي = FORMA يحسبها" value="${p.customKcal||""}"><button id="saveCk">حفظ</button></div></div>
+    ${macroUI(p,g)}
     ${S.adj?`<p class="note">معدّلة ${S.adj>0?"+":""}${S.adj} سعرة من المراجعات الأسبوعية. <button class="ghost" id="resetAdj" style="padding:0 4px">ألغِ التعديل</button></p>`:""}
     <details><summary>كيف نحسبها؟ ‹</summary><ul class="guide" style="margin-top:8px">
       <li>حرقك اليومي ${fmt(g.tdee)} سعرة: معادلة Mifflin-St Jeor (${fmt(g.bmr)}) مضروبة في مستوى نشاطك. هذي أدق معادلة للناس العاديين.</li>
@@ -1302,12 +1340,14 @@ function render(){
   document.querySelectorAll("nav button").forEach(b=>{if(b.dataset.tab===tab)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   $("#streakN").textContent=S.profile?streak():0;
   const views={setup:vSetup,today:vToday,food:vFood,train:vTrain,progress:vProgress,settings:vSettings,edit:vEdit,plan:vPlan};
+  const same=tab===lastTab&&tab!=="setup",y=window.scrollY;
   const V=$("#view");V.innerHTML=(views[tab]||vToday)();
   if(tab!==lastTab){V.classList.remove("vin");void V.offsetWidth;V.classList.add("vin");lastTab=tab}
   if(tab==="plan"){const k=$("#planK");if(k)countUp(k)}
   if(tab==="food")renderResults();
   if(tab!=="train"&&$("#rest"))$("#rest").remove();
-  window.scrollTo(0,0);
+  /* نفس الصفحة: نبقى بنفس المكان بدل ما ننط فوق */
+  window.scrollTo(0,same?y:0);
 }
 $("#gearB").innerHTML=ICON.gear;$("#streakIco").innerHTML=ICON.flame;
 /* زر + في نص الشريط */
@@ -1360,6 +1400,7 @@ $("#view").addEventListener("click",e=>{
       if(all&&i>=0){const nxt=ex.findIndex((e,x)=>{if(x<=i)return false;const nn=exName(si,x);for(let y=0;y<e[1];y++)if(!(live.v[nn+"|"+y]&&live.v[nn+"|"+y].d))return true;return false});
         if(nxt>=0){live.open=nxt;saveDrafts();renderTrainAt();return}}}
     saveDrafts();renderTrainKeep();return}
+  if(d.mxp!==undefined){const x=MPRE[+d.mxp];["p","c","f"].forEach((k,i)=>{const el=$(`[data-mx="${k}"]`);if(el)el.value=x[i+1]});mxLive();return}
   if(d.exo!==undefined){live.open=+d.exo;saveDrafts();return renderTrainAt()}
   if(d.hist!==undefined)return openHist(d.hist);
   if(d.sug){sugFilter=d.sug;return render()}
@@ -1380,6 +1421,8 @@ $("#view").addEventListener("click",e=>{
     case "rvApply":{const rv=weeklyReview();if(rv){S.adj+=rv.delta;S.lastReview=today();save();render();toast(`سعراتك الحين ${fmt(G().kcal)}`)}return}
     case "rvSkip":S.lastReview=today();save();return render();
     case "wEdit":wEdit=true;render();{const w=$("#wIn");if(w)w.focus()}return;
+    case "waterAdd":case "waterSub":{const T=today(),d=day(T),g=waterGoal(),was=d.water||0;d.water=Math.max(0,was+(b.id==="waterAdd"?1:-1));save();PF.haptic(b.id==="waterAdd"?"light":"select");
+      const el=$("#wtr");if(el)el.innerHTML=waterHTML(T);if(was<g&&d.water>=g)toast("كمّلت هدف الماء اليوم");return}
     case "wSave":{const v=parseFloat($("#wIn").value);if(v>=35&&v<=250){day(today()).weight=v;wEdit=false;save();render();PF.haptic("success");toast("انحفظ وزنك")}else toast("اكتب وزن صحيح بالكيلو");return}
     case "prevD":foodDay=key(addDays(parseKey(foodDay),-1));return render();
     case "nextD":if(foodDay!==today()){foodDay=key(addDays(parseKey(foodDay),1));render()}return;
@@ -1399,6 +1442,11 @@ $("#view").addEventListener("click",e=>{
     case "copyY":{const src=S.days[key(addDays(parseKey(foodDay),-1))];if(src&&src.food.length){day(foodDay).food.push(...src.food.map(x=>({...x})));save();render();toast("انضاف أكل اليوم السابق")}else toast("ما فيه أكل مسجل في اليوم السابق");return}
     case "finish":return finish();
     case "shareP":return shareProgress();
+    case "mxSave":{const v=k=>Math.round(+($(`[data-mx="${k}"]`)||{}).value||0),m={p:v("p"),c:v("c"),f:v("f")};
+      if(m.p+m.c+m.f!==100)return toast(`المجموع ${m.p+m.c+m.f}%، لازم يكون 100%`);
+      if(m.p<10||m.c<5||m.f<15)return toast("البروتين 10% على الأقل، والدهون 15% على الأقل");
+      S.profile.macro=m;save();render();PF.haptic("success");return toast("انحفظ توزيعك")}
+    case "mxAuto":delete S.profile.macro;save();render();return toast("رجع التوزيع التلقائي");
     case "saveCk":{const v=+$("#ck").value;if(!$("#ck").value){S.profile.customKcal=null;save();render();return toast("رجعنا للحساب التلقائي")}if(v>=1200&&v<=6000){S.profile.customKcal=v;S.adj=0;save();render();toast("انحفظت سعراتك")}else toast("اكتب رقم بين 1200 و 6000");return}
     case "resetAdj":S.adj=0;save();return render();
     case "exportB":return exportData();
@@ -1414,6 +1462,7 @@ $("#view").addEventListener("input",e=>{
     if(f==="sn")ed.sessions[+si].n=v;else if(f==="r")ed.sessions[+si].ex[+i][2]=v;else if(f==="pn")ed.name=v;else if(f==="wk")ed.weeks=v;return}
   if(e.target.dataset.note!=null){const nn=e.target.dataset.note,vv=e.target.value;e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";if(vv.trim())S.exNotes[nn]=vv;else delete S.exNotes[nn];save();return}
   const k=e.target.dataset.k;
+  if(e.target.dataset&&e.target.dataset.mx){mxLive();return}
   if(k){const parts=k.split("|"),f=parts.pop(),j=parts.pop(),n=parts.join("|");const v=live.v[n+"|"+j]=live.v[n+"|"+j]||{};v[f]=e.target.value;saveDrafts();
     if(f==="kg"){const best=+e.target.dataset.best;e.target.classList.toggle("pr",best>0&&+e.target.value>best)}}
 });

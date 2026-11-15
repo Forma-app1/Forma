@@ -442,3 +442,44 @@ nav .in>button:not(.fab){flex:1;min-width:0}
 .frow i{height:10px;border-radius:6px;background:var(--track);overflow:hidden;direction:rtl;display:flex}
 .frow b{display:block;height:100%;background:var(--accent);border-radius:6px}
 .frow .num{text-align:left;color:var(--muted)}
+
+/* 4.5 وزن اليوم والماء */
+.dq{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dq-c{display:flex;flex-direction:column;gap:8px;padding:14px;min-width:0}
+.dq-h{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:24px}
+.dq-v{display:flex;align-items:baseline;gap:5px}
+.dq-v b{font-family:var(--display);font-size:28px;line-height:1.1;font-weight:800}
+.dq-v small{color:var(--muted);font-size:12.5px}
+.dq-e{padding:2px 6px;font-size:12.5px}
+.dq-c input{padding:10px 12px}
+.dq-c .primary{padding:10px}
+.wtr-bar{height:8px;border-radius:6px;background:var(--track);overflow:hidden;display:flex;direction:rtl}
+.wtr-bar i{display:block;height:100%;background:#38BDF8;border-radius:6px;transition:width .35s cubic-bezier(.2,.8,.2,1)}
+.dq-b{display:flex;gap:6px;margin-top:auto}
+.wtr-p{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:#38BDF8;color:#03263A;padding:10px}
+.wtr-p svg{width:18px;height:18px;fill:currentColor;stroke:none}
+.wtr-m{flex:0 0 40px;padding:10px 0;font-size:18px;line-height:1}
+.wtr-m:disabled{opacity:.35}
+@media (max-width:340px){.dq{grid-template-columns:1fr}}
+
+/* 4.5 توزيع السعرات */
+.mx{gap:10px}
+.mx-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;gap:2px}
+.mx-bar i{display:block;transition:flex .3s}
+.mx-bar .p{background:var(--mp)}.mx-bar .c{background:var(--mc)}.mx-bar .f{background:var(--mf)}
+.mx-in{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mx-f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:700}
+.mx-f.p span{color:var(--mp)}.mx-f.c span{color:var(--mc)}.mx-f.f span{color:var(--mf)}
+.mx-f div{position:relative}
+.mx-f input{padding-inline-end:26px;text-align:center}
+.mx-f i{position:absolute;inset-inline-end:10px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted)}
+#mxSum.bad{color:var(--mf);font-weight:700}
+.mx-pre{flex-wrap:wrap}
+.mx-pre small{color:var(--muted);font-weight:500}
+
+/* 4.5 سلاسة اللمس */
+button,a,.chip,.item,[data-go]{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button{transition:transform .12s ease,opacity .15s ease,background-color .2s ease}
+button:active:not(:disabled){transform:scale(.97)}
+html,body{overscroll-behavior-y:none}
+@media (prefers-reduced-motion: reduce){button{transition:none}button:active:not(:disabled){transform:none}.wtr-bar i,.mx-bar i{transition:none}}
