@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.6.0";
+const VER="4.6.1";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -880,7 +880,7 @@ function vTrain(){
   const doneCnt=(n,sets)=>{let c=0;for(let j=0;j<sets;j++)if(live.v[n+"|"+j]&&live.v[n+"|"+j].d)c++;return c};
   const tot=s.ex.reduce((a,e)=>a+e[1],0),dn=s.ex.reduce((a,e,i)=>a+doneCnt(exName(si,i),e[1]),0);
   return `
-  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">جلسة ${Math.min(progDone()+1,progTotal())} من ${progTotal()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
+  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">خلّصت <b class="num">${progDone()}</b> من ${progTotal()} جلسة</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
   <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
   ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span class="wk-saved">محفوظ تلقائيا ✓</span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
   <div class="card ex-list">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
