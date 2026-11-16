@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.5.0";
+const VER="4.6.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -494,7 +494,7 @@ function vToday(){
   const mr=(cls,name,v,goal)=>`<div class="mring ${cls}">${ring(clamp(v/goal,0,1),"sm",`<b class="num">${fmt(v)}</b>`)}<span>${name} <i class="num">/ ${goal}</i></span></div>`;
   const tr=trainedOn(T),pl=clamp(progDone()/progTotal()*100,0,100);
   return `
-  <div class="th"><span class="sub">${dateAr(T)}${st?` · <b class="hotc">${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض</b>`:""}</span><h1>${greet} ${esc(S.profile.name)}</h1></div>
+  <div class="th"><span class="sub">${fnd()?`<b class="fnd-tag">مؤسس${fnd().n?" #"+fnd().n:""}</b> · `:""}${dateAr(T)}${st?` · <b class="hotc">${st} ${st===1?"يوم":st<=10?"أيام":"يوم"} ورا بعض</b>`:""}</span><h1>${greet} ${esc(S.profile.name)}</h1></div>
   ${install}
   ${trialCard()}
   <div class="card hero2">
@@ -550,8 +550,26 @@ function coachCtx(){
     trainedToday:trainedOn(T),daysSinceTrain:lastT?daysBetween(lastT,T):999,
     week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length+openSessions().filter(k=>daysBetween(k,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
 }
+/* ===== عضوية المؤسسين ===== */
+let seatsLeft=null;
+const fnd=()=>{const p=CL&&CL.plan&&CL.code&&CL.code()?CL.plan():null;return p&&(p.plan==="founder"||p.plan==="admin")?p:null};
+function applyGold(){document.documentElement.toggleAttribute("data-gold",!!(fnd()&&S.gold))}
+function refreshPlan(force){if(!CL||!CL.info||!CL.code())return applyGold();const p=CL.plan();applyGold();
+  if(!force&&p&&Date.now()-(p.t||0)<864e5)return;
+  CL.info().then(r=>{if(!r)return;applyGold();if(tab==="settings"||tab==="today")render()})}
+function refreshSeats(){if(!CL||!CL.foundersLeft||CL.code()||!window.FORMA_TRIAL)return;
+  CL.foundersLeft().then(n=>{if(n==null||n===seatsLeft)return;seatsLeft=n;const el=$("#fndSeats");if(el)el.textContent=seatsTxt()})}
+const seatsTxt=()=>seatsLeft==null?"أول 100 مشترك":seatsLeft>0?`باقي ${seatsLeft} من 100`:"اكتملت";
 function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return "";const d=Math.ceil(l/864e5);
-  return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>فورما مجاني للكل لمدة أسبوع</b><small>${d<=1?"آخر يوم":d===2?"باقي يومين":"باقي "+d+" أيام"}. اشترِه مرة وحدة بدون اشتراك وكمّل على بياناتك.</small></span><i>اشترِ ‹</i></a>`}
+  const free=l>0?(d<=1?" آخر يوم مجاني.":d===2?" باقي يومين مجانا.":" باقي "+d+" أيام مجانا."):"";
+  if(seatsLeft===0)return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>اشترِ فورما مرة وحدة</b><small>بدون اشتراك، وكل بياناتك تبقى معك.${free}</small></span><i>اشترِ ‹</i></a>`;
+  return `<a class="trial fnd-offer" href="${T.buy}" target="_blank" rel="noopener"><span><b>عضوية المؤسسين · <em id="fndSeats">${seatsTxt()}</em></b><small>34.99 مرة وحدة، مدى الحياة. وخصم 50% دائم على أي ميزة جديدة.${free}</small></span><i>انضم ‹</i></a>`}
+function founderCard(){const f=fnd();if(!f)return "";
+  const wa="https://wa.me/966550496981?text="+encodeURIComponent("أنا عضو مؤسس في فورما"+(f.n?" #"+f.n:"")+". عندي طلب: ");
+  return `<div class="card fnd-card stack"><div class="row"><h2>عضو مؤسس${f.n?` <span class="num">#${f.n}</span>`:""}</h2><span class="fnd-badge" aria-hidden="true">★</span></div>
+    <ul class="fnd-l"><li>فورما مدى الحياة بدون اشتراك، مع كل تحديثات الميزات الحالية</li><li>خصم 50% دائم على أي ميزة أو باقة مدفوعة جديدة</li><li>أول من يجرب الميزات الجديدة</li><li>طلبات الأكلات والمطاعم منك لها أولوية</li></ul>
+    <label class="row fnd-sw"><span>الثيم الذهبي للمؤسسين</span><input type="checkbox" id="goldT" ${S.gold?"checked":""}></label>
+    <a class="btn" href="${wa}" target="_blank" rel="noopener">اطلب أكلة أو ميزة</a></div>`}
 const APP_URL="https://forma-app1.github.io/Forma/";
 function shareApp(){const d={title:"FORMA",text:"جرّب فورما: برامج تمرين مبنية على العلم، وسعرات مطاعمنا جاهزة.",url:APP_URL};
   if(navigator.share)navigator.share(d).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(d.text+" "+d.url).then(()=>toast("انسخ الرابط. أرسله لخويك"))}
@@ -1225,6 +1243,7 @@ let resetArmed=false,cycleArmed=false;
 function vSettings(){
   const p=S.profile,g=G();
   return `<div><h1>ملفي</h1><div class="sub">${esc(p.name)} · ${r1(currentWeight())} كغ · ${GOALS[p.goal][0]}</div></div>
+  ${founderCard()}
   <div class="card stack"><div class="row"><h2>أهدافك اليومية</h2><span class="pill">${p.customKcal?"مخصصة":"محسوبة تلقائي"}</span></div>
     <div class="mrow"><div><b>${fmt(g.kcal)}</b><span>سعرة</span></div><div><b>${g.p}</b><span>بروتين</span></div><div><b>${g.c}</b><span>كارب</span></div><div><b>${g.f}</b><span>دهون</span></div></div>
     <div class="field"><label for="ck">سعرات مخصصة (اختياري)</label><div class="row"><input type="number" inputmode="numeric" id="ck" placeholder="فاضي = FORMA يحسبها" value="${p.customKcal||""}"><button id="saveCk">حفظ</button></div></div>
@@ -1455,7 +1474,9 @@ $("#view").addEventListener("click",e=>{
     case "resetB":if(!resetArmed){resetArmed=true;return render()}S={_wiped:true};normalize();save();resetArmed=false;ob=null;tab="setup";return render();
   }
 });
-$("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0])});
+$("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0]);
+  if(e.target.id==="goldT"){S.gold=e.target.checked;save();applyGold();PF.haptic("light")}});
+window.addEventListener("forma:activated",()=>refreshPlan(true));
 $("#view").addEventListener("input",e=>{
   if(e.target.id==="sayIn"){q=e.target.value;return renderResults()}
   if(e.target.dataset.ed&&ed){const [f,si,i]=e.target.dataset.ed.split("|");const v=e.target.value;
@@ -1476,6 +1497,7 @@ if(!(CL&&CL.code&&CL.code()))settleOnce();
 render();
 if(fidDirty)saveLocal();
 initSync();
+try{refreshPlan();refreshSeats()}catch(e){}
 pingUsage();
 
 /* ===== بدون نت ===== */

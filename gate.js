@@ -40,11 +40,11 @@
     var st=document.createElement("style");st.textContent=css;document.head.appendChild(st);
     var d=document.createElement("div");d.className="fg";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");
     var exp=trialLeft()===0;
-    d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>'+(exp?"خلصت الفترة المجانية":"هلا بك في فورما")+'</h1><p>'+(exp?"عجبك فورما؟ اشتره مرة وحدة بدون اشتراك، وكل اللي سجلته يبقى.":"جرّبه 3 أيام مجانا. بدون كود وبدون بطاقة.")+'</p>'+
-      (exp?'<a class="primary fg-buy" href="'+BUY+'" target="_blank" rel="noopener">اشترِ فورما</a>':'<button class="primary wide" type="button" id="fgTrial">ابدأ التجربة المجانية</button>')+'<div class="fg-or">عندك كود تفعيل؟</div>'+
+    d.innerHTML='<form class="fg-in"><div class="fg-wm">FORMA</div><h1>'+(exp?"خلصت الفترة المجانية":"هلا بك في فورما")+'</h1><p>'+(exp?"انضم لعضوية المؤسسين: 34.99 مرة وحدة مدى الحياة، وخصم 50% دائم على أي ميزة جديدة. وكل اللي سجلته يبقى معك.":"جرّبه 3 أيام مجانا. بدون كود وبدون بطاقة.")+'</p>'+
+      (exp?'<a class="primary fg-buy" href="'+BUY+'" target="_blank" rel="noopener">انضم للمؤسسين</a>':'<button class="primary wide" type="button" id="fgTrial">ابدأ التجربة المجانية</button>')+'<div class="fg-or">عندك كود تفعيل؟</div>'+
       '<input type="text" id="fgCode" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="FM-XXXXX-XXXXX" aria-label="كود التفعيل">'+
       '<button class="wide" type="submit">تفعيل</button><div class="fg-err" id="fgErr" aria-live="polite"></div>'+
-      '<p>الكود يوصلك على الواتساب أو الإيميل بعد الشراء من متجر فورما.</p></form>';
+      '<p>الكود يوصل إيميلك بعد الدفع مباشرة.</p></form>';
     box=d;document.body.appendChild(d);document.documentElement.style.overflow="hidden";
     var inp=d.querySelector("#fgCode"),err=d.querySelector("#fgErr"),btn=d.querySelector('button[type="submit"]'),tb=d.querySelector("#fgTrial");
     if(tb)tb.addEventListener("click",function(){set(TRIAL,String(Date.now()));gone();window.dispatchEvent(new Event("forma:trial"));

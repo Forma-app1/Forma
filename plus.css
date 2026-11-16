@@ -483,3 +483,20 @@ button{transition:transform .12s ease,opacity .15s ease,background-color .2s eas
 button:active:not(:disabled){transform:scale(.97)}
 html,body{overscroll-behavior-y:none}
 @media (prefers-reduced-motion: reduce){button{transition:none}button:active:not(:disabled){transform:none}.wtr-bar i,.mx-bar i{transition:none}}
+
+/* 4.6 عضوية المؤسسين */
+.fnd-offer{background:linear-gradient(135deg,color-mix(in srgb,#E3B341 18%,var(--surface)),var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,#C99A2E 45%,transparent) inset}
+.fnd-offer em{font-style:normal;color:#A87A12}
+.fnd-offer i{color:#A87A12}
+.fnd-tag{color:#A87A12;font-weight:800}
+.fnd-card{background:linear-gradient(160deg,color-mix(in srgb,#E3B341 16%,var(--surface)) 0%,var(--surface) 70%);box-shadow:0 0 0 1px color-mix(in srgb,#C99A2E 40%,transparent) inset}
+.fnd-badge{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;background:linear-gradient(135deg,#F5D27A,#C99A2E);color:#3A2A05;font-size:17px}
+.fnd-l{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.fnd-l li::marker{color:#C99A2E}
+.fnd-sw input{width:22px;height:22px;accent-color:#C99A2E}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .fnd-offer em,:root:not([data-theme="light"]) .fnd-offer i,:root:not([data-theme="light"]) .fnd-tag{color:#F2C960}}
+:root[data-theme="dark"] .fnd-offer em,:root[data-theme="dark"] .fnd-offer i,:root[data-theme="dark"] .fnd-tag{color:#F2C960}
+/* الثيم الذهبي (للمؤسسين) */
+:root[data-gold]{--accent:#B8860B;--accent-ink:#8A6408;--accent-soft:#F6ECD2;--on-accent:#FFFFFF;--grad:linear-gradient(135deg,#F5D27A 0%,#D4A22A 55%,#B8860B 100%);--on-grad:#2E2003}
+@media (prefers-color-scheme: dark){:root[data-gold]:not([data-theme="light"]){--accent:#F2C960;--accent-ink:#F7DA8C;--accent-soft:#3A2F12;--on-accent:#2A1E02;--grad:linear-gradient(135deg,#F7DA8C 0%,#E3B341 55%,#C99A2E 100%);--on-grad:#2A1E02}}
+:root[data-gold][data-theme="dark"]{--accent:#F2C960;--accent-ink:#F7DA8C;--accent-soft:#3A2F12;--on-accent:#2A1E02;--grad:linear-gradient(135deg,#F7DA8C 0%,#E3B341 55%,#C99A2E 100%);--on-grad:#2A1E02}
