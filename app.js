@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.8.0";
+const VER="4.9.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -731,21 +731,28 @@ function openFood(fid){
   const f=getFood(fid);if(!f)return;
   const isG=f.u==="g",opts=isG?[50,100,150,200,250,300]:[0.5,1,1.5,2,3,4];
   let amt=isG?(S.lastAmt?.[fid]||100):1,meal=defaultMeal();
+  /* برجر ماكدونالدز: خيار تخليه دبل أو تزيد جبن */
+  const XP=f.store==="ماكدونالدز"&&/برجر|بيق ماك|كوارتر|رويال|تيستي/.test(f.n)&&!/^(دبل|تربل|إضافة)/.test(f.n);
+  const xPat=XP&&FOODS.find(x=>x.n===(/تيستي/.test(f.n)?"دبل: قطعة لحم كبيرة إضافية (بيق تيستي) - ماك":"دبل: قطعة لحم إضافية - ماك")),xChz=XP&&FOODS.find(x=>x.n==="إضافة شريحة جبن - ماك");
+  let dbl=false,chz=false;
+  const tot=()=>{const m=macrosOf(f,amt);[[dbl,xPat],[chz,xChz]].forEach(([on,x])=>{if(on&&x){const a=macrosOf(x,amt);m.k+=a.k;m.p+=a.p;m.c+=a.c;m.f+=a.f}});return m};
   sheet((sh,close)=>{
     sh.setAttribute("aria-label",f.n);
-    const draw=()=>{const m=macrosOf(f,amt);sh.innerHTML=`<div class="grab"></div>
+    const draw=()=>{const m=tot();sh.innerHTML=`<div class="grab"></div>
       <div class="row"><div><h2>${esc(f.n)}</h2><div class="sub">${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${f.cat}</div></div>${srcTag(f)}</div>
       <div class="amts">${opts.map(v=>`<button data-a="${v}" aria-pressed="${v===amt}">${isG?v+" جم":v===0.5?"½":v}</button>`).join("")}</div>
       <div class="row"><input type="number" inputmode="decimal" id="amtIn" dir="ltr" aria-label="${isG?"الكمية بالجرام":f.u==="sp"?"عدد الملاعق":"عدد الحبات"}" value="${amt}" style="text-align:center"><span class="sub" style="white-space:nowrap">${isG?"جرام":f.u==="sp"?"ملعقة":"حبة"}</span></div>
+      ${XP&&xPat?`<div class="xtra"><button data-x="dbl" aria-pressed="${dbl}">دبل <small>+${fmt(xPat.k)}</small></button>${xChz?`<button data-x="chz" aria-pressed="${chz}">جبن زيادة <small>+${fmt(xChz.k)}</small></button>`:""}</div>`:""}
       <div class="meals">${MEALS.map(x=>`<button data-m="${x}" aria-pressed="${x===meal}">${x}</button>`).join("")}</div>
       <div class="mrow"><div><b>${fmt(m.k)}</b><span>سعرة</span></div><div><b>${fmt(m.p)}</b><span>بروتين</span></div><div><b>${f.c==null?"-":fmt(m.c)}</b><span>كارب</span></div><div><b>${f.f==null?"-":fmt(m.f)}</b><span>دهون</span></div></div>
       ${f.c==null?`<p class="note" style="margin-top:8px">${f.store} ما نشر الكارب والدهون لهذا الصنف.</p>`:""}
       <button class="primary wide" id="addGo" style="margin-top:14px">أضف لل${meal}</button>`};
     draw();
-    sh.addEventListener("input",e=>{if(e.target.id==="amtIn"){const v=parseFloat(e.target.value);if(v>0){amt=v;const m=macrosOf(f,amt);const b=sh.querySelectorAll(".mrow b");b[0].textContent=fmt(m.k);b[1].textContent=fmt(m.p);if(f.c!=null){b[2].textContent=fmt(m.c);b[3].textContent=fmt(m.f)}sh.querySelectorAll("[data-a]").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.a===amt))}}});
+    sh.addEventListener("input",e=>{if(e.target.id==="amtIn"){const v=parseFloat(e.target.value);if(v>0){amt=v;const m=tot();const b=sh.querySelectorAll(".mrow b");b[0].textContent=fmt(m.k);b[1].textContent=fmt(m.p);if(f.c!=null){b[2].textContent=fmt(m.c);b[3].textContent=fmt(m.f)}sh.querySelectorAll("[data-a]").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.a===amt))}}});
     sh.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
-      if(b.dataset.a){amt=+b.dataset.a;draw()}else if(b.dataset.m){meal=b.dataset.m;draw()}
-      else if(b.id==="addGo"){if(!(amt>0))return toast("اكتب الكمية");const k=targetDay();day(k).food.push({fid,amt,meal});pushRecent(fid);if(isG){S.lastAmt=S.lastAmt||{};S.lastAmt[fid]=amt}close();afterAdd(k)}});
+      if(b.dataset.x){if(b.dataset.x==="dbl")dbl=!dbl;else chz=!chz;draw()}
+      else if(b.dataset.a){amt=+b.dataset.a;draw()}else if(b.dataset.m){meal=b.dataset.m;draw()}
+      else if(b.id==="addGo"){if(!(amt>0))return toast("اكتب الكمية");const k=targetDay();day(k).food.push({fid,amt,meal});if(dbl&&xPat)day(k).food.push({fid:xPat.fid,amt,meal});if(chz&&xChz)day(k).food.push({fid:xChz.fid,amt,meal});pushRecent(fid);if(isG){S.lastAmt=S.lastAmt||{};S.lastAmt[fid]=amt}close();afterAdd(k)}});
   });
 }
 function openQuick(pre){
