@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.6.3";
+const VER="4.7.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -544,6 +544,20 @@ let tipShift=0,lastSug=[];
 const quickActs=(food)=>`<div class="qa4"><button id="photoB">${ICON.camera}<span>صوّر أكلك</span></button><button id="scanB">${ICON.scan}<span>باركود</span></button>${food?"":`<button id="qSay">${ICON.mic}<span>تكلم</span></button><button id="qSearch">${ICON.search}<span>ابحث</span></button>`}</div>`;
 
 /* ===== نصايح فورما ===== */
+/* وش أكل في يوم معين: مطاعم، حلا، مشروبات محلاة، خضار، فواكه، مقلي، بروتين كل وجبة */
+const FRIED=/بروست|مقلي|مقرمش|فرايز|بطاطس|كرسبي|نقتس|ناجتس|سمبوس|فلافل|زنجر|شيبس/;
+function foodProfile(k){
+  const r={n:0,k:0,rest:0,restK:0,stores:[],sweetK:0,drinkK:0,veg:0,fruit:0,fried:0,sauceK:0,meals:{},mealP:{}};
+  (S.days[k]?.food||[]).forEach(e=>{const f=eFood(e);if(!f)return;const m=macrosOf(f,e.amt);r.n++;r.k+=m.k;
+    r.meals[e.meal]=(r.meals[e.meal]||0)+m.k;r.mealP[e.meal]=(r.mealP[e.meal]||0)+m.p;
+    if(f.store){r.rest++;r.restK+=m.k;if(!r.stores.includes(f.store))r.stores.push(f.store)}
+    if(f.cat==="حلويات وسناكات")r.sweetK+=m.k;
+    if(f.cat==="مشروبات"&&m.c>=10)r.drinkK+=m.k;
+    if(f.cat==="خضار")r.veg++;if(f.cat==="فواكه")r.fruit++;
+    if(f.cat==="دهون ومكسرات وصوصات")r.sauceK+=m.k;
+    if(FRIED.test(f.n||""))r.fried++});
+  return r;
+}
 function coachCtx(){
   const T=today(),p=S.profile,g=G(),P=prog(),now=new Date();
   const ks=[];for(let i=1;i<=7;i++)ks.push(key(addDays(now,-i)));
@@ -558,7 +572,10 @@ function coachCtx(){
     lastWeighDays:lastW?daysBetween(lastW,T):999,log7:logged.length,avgK7:avg("k"),avgP7:avg("p"),
     todayLogged:!!(S.days[T]?.food||[]).length,todayP:tdy.p,anyFood:Object.values(S.days).some(d=>(d.food||[]).length),
     trainedToday:trainedOn(T),daysSinceTrain:lastT?daysBetween(lastT,T):999,
-    week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length+openSessions().filter(k=>daysBetween(k,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n)};
+    week:{done:hist.filter(h=>daysBetween(h.date,T)<7).length+openSessions().filter(k=>daysBetween(k,T)<7).length,plan:P.days},prs3,streak:streak(),next:sName(P.sessions[sessIdx()].n),
+    fd:foodProfile(T),wk:(()=>{const a=ks.map(foodProfile).filter(x=>x.n);return {days:a.length,vegDays:a.filter(x=>x.veg).length,rest:a.reduce((s,x)=>s+x.rest,0),sweetDays:a.filter(x=>x.sweetK>=250).length}})(),
+    water:S.days[T]?.water||0,waterGoal:waterGoal(),todayK:tdy.k,todayC:tdy.c,todayF:tdy.f,
+    trainedYday:trainedOn(key(addDays(now,-1))),totalDone:progDone(),progWeeks:P.weeks,progDays:P.days};
 }
 /* ===== عضوية المؤسسين ===== */
 let seatsLeft=null;
@@ -584,7 +601,7 @@ const APP_URL="https://forma-app1.github.io/Forma/";
 function shareApp(){const d={title:"FORMA",text:"جرّب فورما: برامج تمرين مبنية على العلم، وسعرات مطاعمنا جاهزة.",url:APP_URL};
   if(navigator.share)navigator.share(d).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(d.text+" "+d.url).then(()=>toast("انسخ الرابط. أرسله لخويك"))}
 let coachIdx=0;
-const COACH_ACT={food:["سجّل أكلك","food"],train:["ابدأ التمرين","train"],weight:["سجّل وزنك","weight"],setup:["عدّل هدفك","setup"]};
+const COACH_ACT={food:["سجّل أكلك","food"],train:["ابدأ التمرين","train"],weight:["سجّل وزنك","weight"],setup:["عدّل هدفك","setup"],water:["أضف كوب ماء","water"]};
 function coachCard(){
   if(!COACH)return "";
   let list;try{list=COACH.tips(coachCtx()).slice(0,4)}catch(e){return ""}
@@ -1435,7 +1452,7 @@ $("#view").addEventListener("click",e=>{
   if(d.sug){sugFilter=d.sug;return render()}
   if(d.sugadd!==undefined)return addSug(+d.sugadd);
   if(d.edx)return edAction(d.edx);
-  if(d.coach){const a=d.coach;if(a==="weight"){wEdit=true;render();const w=$("#wIn");if(w){w.scrollIntoView({block:"center",behavior:"smooth"});w.focus()}return}tab=a;if(a==="food"){foodDay=today();q=""}if(a==="setup")ob=null;return render()}
+  if(d.coach){const a=d.coach;if(a==="water"){const b2=$("#waterAdd");if(b2)b2.click();return}if(a==="weight"){wEdit=true;render();const w=$("#wIn");if(w){w.scrollIntoView({block:"center",behavior:"smooth"});w.focus()}return}tab=a;if(a==="food"){foodDay=today();q=""}if(a==="setup")ob=null;return render()}
   switch(b.id){
     case "openEdit":return openEditor(S.prog);
     case "newMine":return openEditor("mine");
