@@ -504,3 +504,8 @@ html,body{overscroll-behavior-y:none}
 /* 4.6.3 نهاية البرنامج */
 .pend{margin-top:10px;gap:8px;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
 .pend b{font-size:15px}
+
+/* 4.8 التنبيهات */
+.nt-r{padding:6px 0;border-bottom:1px solid var(--line)}
+.nt-r small{font-weight:500;margin-inline-start:6px}
+.nt-r input{width:22px;height:22px;accent-color:var(--accent)}

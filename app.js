@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.7.0";
+const VER="4.8.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -577,6 +577,33 @@ function coachCtx(){
     water:S.days[T]?.water||0,waterGoal:waterGoal(),todayK:tdy.k,todayC:tdy.c,todayF:tdy.f,
     trainedYday:trainedOn(key(addDays(now,-1))),totalDone:progDone(),progWeeks:P.weeks,progDays:P.days};
 }
+/* ===== التنبيهات ===== */
+let pushKey,pushSub=null,pushBusy=false;
+const NOTIF=[["weigh","وزن الصبح","7:30 الصبح"],["water","كوب ماء","2:00 الظهر"],["food","تسجيل الأكل","9:00 الليل"]];
+const notifPrefs=()=>Object.assign({weigh:true,water:true,food:true},S.notif||{});
+const pushOK=()=>"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;
+const b64u=s=>{const p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function pushInit(){if(!CL||!CL.pushKey||!pushOK())return;
+  try{const reg=await navigator.serviceWorker.ready;pushSub=await reg.pushManager.getSubscription()}catch(e){}
+  pushKey=await CL.pushKey();if(tab==="settings")render()}
+function notifCard(){if(!pushKey||!pushOK()&&!isIOS)return "";
+  if(isIOS&&!isStandalone())return `<div class="card stack"><h2>التنبيهات</h2><p class="note">تشتغل بعد ما تثبت فورما على شاشتك الرئيسية وتفتحه منها.</p></div>`;
+  if(!pushOK())return "";
+  if(Notification.permission==="denied")return `<div class="card stack"><h2>التنبيهات</h2><p class="note">التنبيهات مقفلة لفورما. فعّلها من إعدادات الجوال، ثم الإشعارات، ثم FORMA.</p></div>`;
+  const p=notifPrefs();
+  if(!pushSub)return `<div class="card stack"><h2>التنبيهات</h2><p class="note">نذكرك بوزن الصبح، والماء، وتسجيل الأكل. ثلاث تنبيهات باليوم بالكثير، وتقدر توقف أي واحد.</p><button class="primary wide" id="notifOn" ${pushBusy?"disabled":""}>شغّل التنبيهات</button></div>`;
+  return `<div class="card stack"><div class="row"><h2>التنبيهات</h2><span class="pill">شغالة</span></div>
+    ${NOTIF.map(([k,l,t])=>`<label class="row nt-r"><span>${l} <small class="sub">${t}</small></span><input type="checkbox" data-nt="${k}" ${p[k]?"checked":""}></label>`).join("")}
+    <div class="grid2"><button id="notifTest">جرّب تنبيه</button><button class="ghost" id="notifOff">أوقفها</button></div></div>`}
+async function notifOn(){if(pushBusy)return;pushBusy=true;render();
+  try{const perm=await Notification.requestPermission();if(perm!=="granted"){pushBusy=false;render();return toast("ما انسمح بالتنبيهات")}
+    const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(pushKey)});
+    const r=await CL.pushSave(sub.toJSON(),notifPrefs());if(!r||!r.ok)throw new Error("save");
+    pushSub=sub;PF.haptic("success");toast("التنبيهات شغالة")}
+  catch(e){toast("ما قدرنا نشغلها. جرب مرة ثانية")}
+  pushBusy=false;render()}
+async function notifOff(){try{if(pushSub){const ep=pushSub.endpoint;await pushSub.unsubscribe();await CL.pushOff(ep)}}catch(e){}pushSub=null;render();toast("وقفنا التنبيهات")}
+
 /* ===== عضوية المؤسسين ===== */
 let seatsLeft=null;
 const fnd=()=>{const p=CL&&CL.plan&&CL.code&&CL.code()?CL.plan():null;return p&&(p.plan==="founder"||p.plan==="admin")?p:null};
@@ -1271,6 +1298,7 @@ function vSettings(){
   const p=S.profile,g=G();
   return `<div><h1>ملفي</h1><div class="sub">${esc(p.name)} · ${r1(currentWeight())} كغ · ${GOALS[p.goal][0]}</div></div>
   ${founderCard()}
+  ${notifCard()}
   <div class="card stack"><div class="row"><h2>أهدافك اليومية</h2><span class="pill">${p.customKcal?"مخصصة":"محسوبة تلقائي"}</span></div>
     <div class="mrow"><div><b>${fmt(g.kcal)}</b><span>سعرة</span></div><div><b>${g.p}</b><span>بروتين</span></div><div><b>${g.c}</b><span>كارب</span></div><div><b>${g.f}</b><span>دهون</span></div></div>
     <div class="field"><label for="ck">سعرات مخصصة (اختياري)</label><div class="row"><input type="number" inputmode="numeric" id="ck" placeholder="فاضي = FORMA يحسبها" value="${p.customKcal||""}"><button id="saveCk">حفظ</button></div></div>
@@ -1480,6 +1508,9 @@ $("#view").addEventListener("click",e=>{
     case "qSearch":{tab="food";foodDay=today();q="";render();const i=$("#sayIn");if(i)i.focus();return}
     case "coachNext":{coachIdx++;const c=$("#coach");if(c){const tmp=document.createElement("div");tmp.innerHTML=coachCard();c.replaceWith(tmp.firstElementChild)}PF.haptic("light");return}
     case "planProg":return openProgPick();
+    case "notifOn":return notifOn();
+    case "notifOff":return notifOff();
+    case "notifTest":{if(!pushSub)return;CL.pushTest(pushSub.endpoint).then(r=>toast(r&&r.ok?"وصلك تنبيه تجربة":r&&r.err==="wait"?"انتظر دقيقة وجرب":"ما وصل. تأكد من النت"));return}
     case "progHintX":S.progHint=S.prog+"|"+S.progStart;save();return render();
     case "licGo":return linkCode();
     case "statsB":return openStats();
@@ -1503,6 +1534,7 @@ $("#view").addEventListener("click",e=>{
   }
 });
 $("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0]);
+  if(e.target.dataset&&e.target.dataset.nt){S.notif=Object.assign(notifPrefs(),{[e.target.dataset.nt]:e.target.checked});save();if(pushSub)CL.pushSave(pushSub.toJSON(),S.notif).catch(()=>{});PF.haptic("light")}
   if(e.target.id==="goldT"){S.gold=e.target.checked;save();applyGold();PF.haptic("light")}});
 window.addEventListener("forma:activated",()=>refreshPlan(true));
 $("#view").addEventListener("input",e=>{
@@ -1525,7 +1557,10 @@ if(!(CL&&CL.code&&CL.code()))settleOnce();
 render();
 if(fidDirty)saveLocal();
 initSync();
-try{refreshPlan();refreshSeats()}catch(e){}
+try{refreshPlan();refreshSeats();pushInit()}catch(e){}
+/* فتح من تنبيه: ?go=food أو weight */
+try{const go=new URLSearchParams(location.search).get("go");if(go&&S.profile){history.replaceState(null,"",location.pathname);
+  if(go==="food"){tab="food";foodDay=today();q="";render()}else if(go==="weight"){tab="today";wEdit=true;render();const w=$("#wIn");if(w)setTimeout(()=>{w.scrollIntoView({block:"center"});w.focus()},300)}else{tab="today";render()}}}catch(e){}
 pingUsage();
 
 /* ===== بدون نت ===== */

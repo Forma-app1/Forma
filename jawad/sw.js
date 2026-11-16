@@ -1,5 +1,5 @@
 // نسخة جواد: غيّر الرقم مع كل تحديث
-const CACHE="forma-j-v4.7.0";
+const CACHE="forma-j-v4.8.0";
 const SHELL=["./","./index.html","./config.js","../gate.js","./manifest.webmanifest","../app.js","../plus.css","../foods.js","../programs.js","../smart.js","../lib/platform.js","../lib/cloud.js","../lib/coach.js","../brand/icon-192.png","../brand/icon-512.png","../brand/apple-touch-icon.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("forma-j-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
@@ -13,3 +13,9 @@ self.addEventListener("fetch",e=>{
   e.respondWith(fetch(req.url,{cache:"no-cache",credentials:"same-origin"}).then(r=>{if(r&&r.ok){const cp=r.clone();caches.open(CACHE).then(c=>c.put(req.mode==="navigate"?"./index.html":req,cp))}return r})
     .catch(()=>caches.match(req.mode==="navigate"?"./index.html":req,{ignoreSearch:true})));
 });
+
+// التنبيهات
+self.addEventListener("push",e=>{let d={};try{d=e.data?e.data.json():{}}catch(x){d={body:e.data&&e.data.text()}}
+  e.waitUntil(self.registration.showNotification(d.title||"FORMA",{body:d.body||"",tag:d.tag||"forma",icon:"../brand/icon-192.png",badge:"../brand/icon-192.png",data:{url:(d.url||"./").replace("/Forma/?","/Forma/jawad/?")}}))});
+self.addEventListener("notificationclick",e=>{e.notification.close();const url=(e.notification.data&&e.notification.data.url)||"./";
+  e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(cs=>{for(const c of cs){if("focus" in c){c.navigate&&c.navigate(url);return c.focus()}}return self.clients.openWindow(url)}))});
