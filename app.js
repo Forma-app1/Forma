@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.9.0";
+const VER="4.9.1";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -733,7 +733,7 @@ function openFood(fid){
   let amt=isG?(S.lastAmt?.[fid]||100):1,meal=defaultMeal();
   /* برجر ماكدونالدز: خيار تخليه دبل أو تزيد جبن */
   const XP=f.store==="ماكدونالدز"&&/برجر|بيق ماك|كوارتر|رويال|تيستي/.test(f.n)&&!/^(دبل|تربل|إضافة)/.test(f.n);
-  const xPat=XP&&FOODS.find(x=>x.n===(/تيستي/.test(f.n)?"دبل: قطعة لحم كبيرة إضافية (بيق تيستي) - ماك":"دبل: قطعة لحم إضافية - ماك")),xChz=XP&&FOODS.find(x=>x.n==="إضافة شريحة جبن - ماك");
+  const xPat=XP&&FOODS.find(x=>x.n===(/تيستي/.test(f.n)?"دبل: قطعة لحم كبيرة إضافية (بيق تيستي) - ماك":/كوارتر|رويال/.test(f.n)?"دبل: قطعة لحم كوارتر باوندر إضافية - ماك":"دبل: قطعة لحم إضافية - ماك")),xChz=XP&&FOODS.find(x=>x.n==="إضافة شريحة جبن - ماك");
   let dbl=false,chz=false;
   const tot=()=>{const m=macrosOf(f,amt);[[dbl,xPat],[chz,xChz]].forEach(([on,x])=>{if(on&&x){const a=macrosOf(x,amt);m.k+=a.k;m.p+=a.p;m.c+=a.c;m.f+=a.f}});return m};
   sheet((sh,close)=>{
