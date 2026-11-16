@@ -21,7 +21,7 @@ const ACT=[["خامل","شغل مكتبي، بدون رياضة",1.2],["خفيف
 const GOALS=[["خسارة دهون","نزول 0.5-1% بالأسبوع"],["ثبات","تحافظ على وزنك"],["زيادة عضل","زيادة بطيئة ونظيفة"]];
 const TIPS=[
 "البروتين أول شي في صحنك. إذا قفلته، أغلب شغل اليوم خلص.",
-"فوّت تمرين؟ عادي. الجلسة الجاية تنتظرك بنفس مكانها.",
+"فوّت يوم تمرين؟ عادي. اليوم الجاي ينتظرك بنفس مكانه.",
 "زد كيلو أو عدة وحدة عن آخر مرة. هذا التقدم كله.",
 "الميزان يتغير يوميا بسبب الماء والملح. صدّق متوسط الأسبوع.",
 "نومك 7 ساعات يرفع أداءك في الجيم أكثر من أي مكمّل.",
@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.6.1";
+const VER="4.6.2";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -438,7 +438,7 @@ function vPlan(){
       <circle cx="${pts[0][0]}" cy="${pts[0][1]}" r="5" fill="var(--ink)"/><circle cx="${pts[n][0]}" cy="${pts[n][1]}" r="6" fill="var(--accent)"/>
       <text x="${pts[0][0]+2}" y="${pts[0][1]-10}" text-anchor="start">${r1(pj.w)}</text><text x="${pts[n][0]-2}" y="${pts[n][1]-12}" text-anchor="end" style="fill:var(--accent);font-weight:800">${r1(pj.tw)}</text>
       <text x="${L}" y="${H-8}" text-anchor="start">اليوم</text><text x="${W-R}" y="${H-8}" text-anchor="end">⁧${dateAr(pj.date)}⁩</text></svg></div>
-  <div class="card stack rise" style="--d:3"><div class="row"><h2>تمرينك</h2><button class="ghost" id="planProg">غيّر البرنامج</button></div><div class="sub">${esc(P.ar)} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}. أول جلسة: <b dir="auto">${esc(sName(nx.n))}</b>، ${nx.ex.length} تمارين.</div></div>
+  <div class="card stack rise" style="--d:3"><div class="row"><h2>تمرينك</h2><button class="ghost" id="planProg">غيّر البرنامج</button></div><div class="sub">${esc(P.ar)} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}. أول يوم: <b dir="auto">${esc(sName(nx.n))}</b>، ${nx.ex.length} تمارين.</div></div>
   <div class="card stack rise" style="--d:4"><h2>أسبوعك الأول</h2><ol class="plan-steps">
     <li><b>سجّل أكلك كل يوم.</b> اكتب وش أكلت، أو صوّر صحنك، أو امسح الباركود. ما تحتاج دقة 100%.</li>
     <li><b>اوزن نفسك الصبح.</b> 3 مرات بالأسبوع على الأقل. FORMA يعدّل سعراتك كل أسبوع حسب نزولك.</li>
@@ -880,8 +880,8 @@ function vTrain(){
   const doneCnt=(n,sets)=>{let c=0;for(let j=0;j<sets;j++)if(live.v[n+"|"+j]&&live.v[n+"|"+j].d)c++;return c};
   const tot=s.ex.reduce((a,e)=>a+e[1],0),dn=s.ex.reduce((a,e,i)=>a+doneCnt(exName(si,i),e[1]),0);
   return `
-  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">خلّصت <b class="num">${progDone()}</b> من ${progTotal()} جلسة</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
-  <div class="chips" role="group" aria-label="الجلسات">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
+  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">خلّصت <b class="num">${progDone()}</b> من ${progTotal()} يوم تمرين</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
+  <div class="chips" role="group" aria-label="أيام التمرين">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
   ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span class="wk-saved">محفوظ تلقائيا ✓</span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
   <div class="card ex-list">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
     const up=last&&last.length>=sets&&last.slice(0,sets).every(x=>x[1]>=top),dc=doneCnt(n,sets),complete=dc>=sets,open=live.open===i;
@@ -905,7 +905,7 @@ function openSwap(i){
   const si=sessIdx(),orig=prog().sessions[si].ex[i][0],cur=exName(si,i),opts=[orig,...(ALTS[orig]||[])];
   sheet((sh,close)=>{
     sh.setAttribute("aria-label","بدّل التمرين");
-    sh.innerHTML=`<div class="grab"></div><h2>بدّل التمرين</h2><p class="note" style="margin:2px 0 10px">التبديل يثبت لهذي الجلسة في كل الأسابيع الجاية.</p><div class="seg" style="grid-template-columns:1fr">${opts.map(o=>`<button data-alt="${esc(o)}" aria-pressed="${o===cur}" dir="ltr" class="num">${esc(o)}${o===orig?' <small dir="rtl">الأساسي</small>':""}${arN(o)?`<span class="ex-ar" dir="rtl">${arN(o)}</span>`:""}</button>`).join("")}</div>`;
+    sh.innerHTML=`<div class="grab"></div><h2>بدّل التمرين</h2><p class="note" style="margin:2px 0 10px">التبديل يثبت لهذا اليوم في كل الأسابيع الجاية.</p><div class="seg" style="grid-template-columns:1fr">${opts.map(o=>`<button data-alt="${esc(o)}" aria-pressed="${o===cur}" dir="ltr" class="num">${esc(o)}${o===orig?' <small dir="rtl">الأساسي</small>':""}${arN(o)?`<span class="ex-ar" dir="rtl">${arN(o)}</span>`:""}</button>`).join("")}</div>`;
     sh.addEventListener("click",e=>{const b=e.target.closest("[data-alt]");if(!b)return;const sw=S.swaps[S.prog]=S.swaps[S.prog]||{};if(b.dataset.alt===orig)delete sw[si+"|"+i];else sw[si+"|"+i]=b.dataset.alt;save();close();render()});
   });
 }
@@ -1256,7 +1256,7 @@ function vSettings(){
       <li>الدهون 25% من سعراتك، والباقي كارب.</li>
       <li>كل أسبوع يراجع FORMA متوسط وزنك، ويقترح تعديل إذا نزولك أو زيادتك طلعت عن المطلوب.</li></ul></details>
   </div>
-  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${progList().map(k=>progOpt(k,`data-prog="${k}"`)).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول جلسة. أرقامك القديمة تبقى.</p>
+  <div class="card stack"><h2>البرنامج</h2><div class="seg" style="grid-template-columns:1fr">${progList().map(k=>progOpt(k,`data-prog="${k}"`)).join("")}</div><p class="note">تغيير البرنامج يبدأك من أول يوم فيه. أرقامك القديمة تبقى.</p>
     <div class="grid2"><button id="openEdit">عدّل جدولي الحالي</button><button id="newMine">${S.mine?"عدّل جدولي الخاص":"سو جدولك من الصفر"}</button></div></div>
   ${cloudCard()}
   <div class="card stack"><h2>عط خويك فورما</h2><p class="note">أرسل له الرابط وخله يجربه.</p><button id="shareApp">شارك فورما</button></div>
