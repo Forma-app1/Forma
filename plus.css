@@ -511,8 +511,8 @@ html,body{overscroll-behavior-y:none}
 .nt-r input{width:22px;height:22px;accent-color:var(--accent)}
 
 /* 4.9 خيارات البرجر */
-.xtra{display:flex;gap:8px;margin:10px 0 2px}
+.xtra{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}
 .xtra button{flex:1;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line) inset}
 .xtra button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);box-shadow:0 0 0 1.5px var(--accent) inset}
-.xtra small{font-weight:500;color:var(--muted);margin-inline-start:4px}
+.xtra button{padding-inline:6px}.xtra small{display:block;font-weight:500;color:var(--muted);font-size:11px}
 .est{font-style:normal;font-size:10px;opacity:.75;border:1px solid currentColor;border-radius:6px;padding:0 4px;margin-inline-start:2px}
