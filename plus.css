@@ -500,3 +500,7 @@ html,body{overscroll-behavior-y:none}
 :root[data-gold]{--accent:#B8860B;--accent-ink:#8A6408;--accent-soft:#F6ECD2;--on-accent:#FFFFFF;--grad:linear-gradient(135deg,#F5D27A 0%,#D4A22A 55%,#B8860B 100%);--on-grad:#2E2003}
 @media (prefers-color-scheme: dark){:root[data-gold]:not([data-theme="light"]){--accent:#F2C960;--accent-ink:#F7DA8C;--accent-soft:#3A2F12;--on-accent:#2A1E02;--grad:linear-gradient(135deg,#F7DA8C 0%,#E3B341 55%,#C99A2E 100%);--on-grad:#2A1E02}}
 :root[data-gold][data-theme="dark"]{--accent:#F2C960;--accent-ink:#F7DA8C;--accent-soft:#3A2F12;--on-accent:#2A1E02;--grad:linear-gradient(135deg,#F7DA8C 0%,#E3B341 55%,#C99A2E 100%);--on-grad:#2A1E02}
+
+/* 4.6.3 نهاية البرنامج */
+.pend{margin-top:10px;gap:8px;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent) inset}
+.pend b{font-size:15px}

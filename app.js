@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.6.2";
+const VER="4.6.3";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -221,6 +221,16 @@ function lastFor(ex){for(let i=S.history.length-1;i>=0;i--){const h=S.history[i]
 function bestFor(ex){let b=0;S.history.forEach(h=>(h.sets?.[ex]||[]).forEach(s=>{if(s[0]>b)b=s[0]}));return b}
 const progDone=()=>S.history.filter(h=>h.prog===S.prog&&(!S.progStart||h.date>=S.progStart)).length;
 const progTotal=()=>prog().weeks*prog().days;
+/* أسبوع البرنامج حسب أيام التمرين اللي خلصها (مو التقويم) */
+const ORD=["الأول","الثاني","الثالث","الرابع","الخامس","السادس","السابع","الثامن","التاسع","العاشر","الحادي عشر","الثاني عشر","الثالث عشر","الرابع عشر","الخامس عشر","السادس عشر"];
+const progWeek=()=>Math.floor(progDone()/prog().days)+1;
+const weekLine=()=>{const w=progWeek();return w>prog().weeks?"خلّصت البرنامج":`هذا أسبوعك ${ORD[w-1]||w}`};
+/* آخر أسبوع: نقترح يغيّر البرنامج. يقدر يسكّر الاقتراح */
+function progEndCard(){const P=prog(),w=progWeek();if(w<P.weeks||S.progHint===S.prog+"|"+S.progStart)return "";
+  const done=w>P.weeks;
+  return `<div class="card stack pend"><b>${done?"خلّصت "+P.weeks+" أسبوع من البرنامج":"هذا آخر أسبوع بالبرنامج"}</b>
+    <p class="note">جسمك تعوّد على هالتمارين. ${done?"ننصحك":"بعد هالأسبوع ننصحك"} تغيّر البرنامج، أو تعيده بأوزان أعلى، عشان يستمر التطور.</p>
+    <div class="grid2"><button class="primary" id="planProg">اختر برنامج</button><button id="progHintX">كمّل عليه</button></div></div>`}
 
 /* ===== التثبيت ===== */
 const isStandalone=()=>window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
@@ -880,7 +890,7 @@ function vTrain(){
   const doneCnt=(n,sets)=>{let c=0;for(let j=0;j<sets;j++)if(live.v[n+"|"+j]&&live.v[n+"|"+j].d)c++;return c};
   const tot=s.ex.reduce((a,e)=>a+e[1],0),dn=s.ex.reduce((a,e,i)=>a+doneCnt(exName(si,i),e[1]),0);
   return `
-  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">خلّصت <b class="num">${progDone()}</b> من ${progTotal()} يوم تمرين</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div></div>
+  <div class="stack" style="gap:6px"><span class="lbl">${P.ar} · ${dL(P.days)} بالأسبوع · ${wkL(P.weeks)}</span><div class="row"><h1 class="num" dir="auto">${esc(sName(s.n))}</h1><span class="sub">${weekLine()}</span></div><div class="progress"><i style="width:${clamp(progDone()/progTotal()*100,0,100)}%"></i></div>${progEndCard()}</div>
   <div class="chips" role="group" aria-label="أيام التمرين">${P.sessions.map((x,i)=>`<button class="chip num" data-sess="${i}" aria-pressed="${i===si}" dir="auto">${esc(sName(x.n))}</button>`).join("")}</div>
   ${live.start?`<div class="wk-stat"><span>المجموعات <b class="num">${dn}/${tot}</b></span><span class="wk-saved">محفوظ تلقائيا ✓</span><span>بدأت <b class="num" id="wkClock">${clockSince(live.start)}</b></span></div>`:""}
   <div class="card ex-list">${s.ex.map((e,i)=>{const n=exName(si,i),sets=e[1],reps=e[2],top=+String(reps).split("-").pop(),last=lastFor(n),best=bestFor(n);
@@ -1453,6 +1463,7 @@ $("#view").addEventListener("click",e=>{
     case "qSearch":{tab="food";foodDay=today();q="";render();const i=$("#sayIn");if(i)i.focus();return}
     case "coachNext":{coachIdx++;const c=$("#coach");if(c){const tmp=document.createElement("div");tmp.innerHTML=coachCard();c.replaceWith(tmp.firstElementChild)}PF.haptic("light");return}
     case "planProg":return openProgPick();
+    case "progHintX":S.progHint=S.prog+"|"+S.progStart;save();return render();
     case "licGo":return linkCode();
     case "statsB":return openStats();
     case "shareApp":return shareApp();
