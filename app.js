@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.9.1";
+const VER="4.9.2";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -166,7 +166,10 @@ function macrosOf(f,amt){const m=factor(f,amt);return {k:(f.k||0)*m,p:(f.p||0)*m
 function totals(k){const t={k:0,p:0,c:0,f:0};(S.days[k]?.food||[]).forEach(e=>{const m=macrosOf(eFood(e),e.amt);t.k+=m.k;t.p+=m.p;t.c+=m.c;t.f+=m.f});return t}
 const foodName=f=>f.store&&RESTS.includes(f.store)&&!f.n.includes(f.store)?f.n:f.n;
 const foodSub=f=>{const unit=f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملعقة":"للحبة";return `${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${fmt(f.k)} سعرة ${unit}`};
-function srcTag(f){if(f.code)return `<span class="pill mute">من الباركود</span>`;const s=f.store&&SOURCES[f.store];if(!s)return "";const off=s[1].startsWith("رسمي");return `<span class="pill ${off?"":"mute"}">${off?"قيم رسمية":"قيم تقديرية"}</span>`}
+const EST=new Set(window.FORMA_EST||[]);
+const isEst=f=>!!f&&!f.code&&f.src!=="photo"&&(EST.has(f.n)||!!(f.store&&SOURCES[f.store]&&!SOURCES[f.store][1].startsWith("رسمي")));
+const estS=f=>isEst(f)?` · <i class="est">تقديري</i>`:"";
+function srcTag(f){if(f.code)return `<span class="pill mute">من الباركود</span>`;const s=f.store&&SOURCES[f.store];if(!s)return "";const off=s[1].startsWith("رسمي")&&!EST.has(f.n);return `<span class="pill ${off?"":"mute"}">${off?"قيم رسمية":"قيم تقديرية"}</span>`}
 
 /* ===== الأيام والسلسلة ===== */
 const active=k=>!!(S.days[k]&&(S.days[k].food||[]).length)||trainedOn(k);
@@ -644,7 +647,7 @@ let foodDay=null,cat="الكل",q="";
 function dayLabel(k){if(k===today())return "اليوم";if(k===key(addDays(new Date(),-1)))return "أمس";try{return parseKey(k).toLocaleDateString("ar-u-nu-latn",{weekday:"long",day:"numeric",month:"long"})}catch(e){return k}}
 /* ماكروز ملونة: P بروتين، C كارب، F دهون */
 const mx=(p,c,f)=>`<span class="mx" dir="ltr"><span class="mp">P<b>${p==null?"-":fmt(p)}</b></span><span class="mc">C<b>${c==null?"-":fmt(c)}</b></span><span class="mf">F<b>${f==null?"-":fmt(f)}</b></span></span>`;
-const foodRow=f=>`<button class="item fi" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${f.store&&RESTS.includes(f.store)?esc(f.store)+" · ":""}${f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملعقة":"للحبة"}</small>${mx(f.p,f.c,f.f)}</span><span class="kc num">${fmt(f.k)}<small>سعرة</small></span><span class="plus" aria-hidden="true">+</span></button>`;
+const foodRow=f=>`<button class="item fi" data-add="${f.fid}"><span class="n">${esc(f.n)}<small>${f.store&&RESTS.includes(f.store)?esc(f.store)+" · ":""}${f.u==="g"?"لكل 100 جم":f.u==="sp"?"للملعقة":"للحبة"}${estS(f)}</small>${mx(f.p,f.c,f.f)}</span><span class="kc num">${fmt(f.k)}<small>سعرة</small></span><span class="plus" aria-hidden="true">+</span></button>`;
 let browse=false;
 function vFood(){
   foodDay=foodDay||today();
@@ -670,7 +673,7 @@ function vFood(){
     <div class="row"><h2>${foodDay===today()?"أكلك اليوم":"أكل "+label}</h2><span class="sub num">${fmt(t.k)} سعرة</span></div>
     ${used.length?used.map(m=>{const es=entries.map((e,i)=>({e,i})).filter(o=>o.e.meal===m),tm=es.reduce((a,o)=>{const x=macrosOf(eFood(o.e),o.e.amt);a.k+=x.k;a.p+=x.p;a.c+=x.c;a.f+=x.f;return a},{k:0,p:0,c:0,f:0});
       return `<div class="meal-g m${MEALS.indexOf(m)}"><div class="meal-h"><h3>${m} <span class="sub num">${fmt(tm.k)}</span> ${mx(tm.p,tm.c,tm.f)}</h3><button class="ghost" data-savemeal="${m}">احفظها كوجبة</button></div>${es.map(o=>{const f=eFood(o.e),mm=macrosOf(f,o.e.amt);
-        return `<div class="item fi"><span class="n">${esc(f.n)}<small>${f.src==="photo"?`من صورة${f.g?" · "+fmt(f.g)+" جم":""}`:amtLabel(f,o.e.amt)}${f.store&&RESTS.includes(f.store)?" · "+esc(f.store):""}</small>${mx(mm.p,f.c==null?null:mm.c,f.f==null?null:mm.f)}</span><span class="kc num">${fmt(mm.k)}<small>سعرة</small></span><button class="del" data-del="${o.i}" aria-label="احذف ${esc(f.n)}">×</button></div>`}).join("")}</div>`}).join("")
+        return `<div class="item fi"><span class="n">${esc(f.n)}<small>${f.src==="photo"?`من صورة${f.g?" · "+fmt(f.g)+" جم":""}`:amtLabel(f,o.e.amt)}${f.store&&RESTS.includes(f.store)?" · "+esc(f.store):""}${estS(f)}</small>${mx(mm.p,f.c==null?null:mm.c,f.f==null?null:mm.f)}</span><span class="kc num">${fmt(mm.k)}<small>سعرة</small></span><button class="del" data-del="${o.i}" aria-label="احذف ${esc(f.n)}">×</button></div>`}).join("")}</div>`}).join("")
       :`<div class="empty">ما سجلت شي ${foodDay===today()?"اليوم":""}. اكتب وش أكلت فوق.</div>`}
     <button id="copyY" class="ghost">${entries.length?`أضف أكل ${prev} هنا`:`نفس أكل ${prev}؟ انسخه بضغطة`}</button>
   </div>
@@ -742,7 +745,7 @@ function openFood(fid){
       <div class="row"><div><h2>${esc(f.n)}</h2><div class="sub">${f.store&&RESTS.includes(f.store)?f.store+" · ":""}${f.cat}</div></div>${srcTag(f)}</div>
       <div class="amts">${opts.map(v=>`<button data-a="${v}" aria-pressed="${v===amt}">${isG?v+" جم":v===0.5?"½":v}</button>`).join("")}</div>
       <div class="row"><input type="number" inputmode="decimal" id="amtIn" dir="ltr" aria-label="${isG?"الكمية بالجرام":f.u==="sp"?"عدد الملاعق":"عدد الحبات"}" value="${amt}" style="text-align:center"><span class="sub" style="white-space:nowrap">${isG?"جرام":f.u==="sp"?"ملعقة":"حبة"}</span></div>
-      ${XP&&xPat?`<div class="xtra"><button data-x="dbl" aria-pressed="${dbl}">دبل <small>+${fmt(xPat.k)}</small></button>${xChz?`<button data-x="chz" aria-pressed="${chz}">جبن زيادة <small>+${fmt(xChz.k)}</small></button>`:""}</div>`:""}
+      ${XP&&xPat?`<div class="xtra"><button data-x="dbl" aria-pressed="${dbl}">دبل <small>+${fmt(xPat.k)}${isEst(xPat)?" تقديري":""}</small></button>${xChz?`<button data-x="chz" aria-pressed="${chz}">جبن زيادة <small>+${fmt(xChz.k)}${isEst(xChz)?" تقديري":""}</small></button>`:""}</div>`:""}
       <div class="meals">${MEALS.map(x=>`<button data-m="${x}" aria-pressed="${x===meal}">${x}</button>`).join("")}</div>
       <div class="mrow"><div><b>${fmt(m.k)}</b><span>سعرة</span></div><div><b>${fmt(m.p)}</b><span>بروتين</span></div><div><b>${f.c==null?"-":fmt(m.c)}</b><span>كارب</span></div><div><b>${f.f==null?"-":fmt(m.f)}</b><span>دهون</span></div></div>
       ${f.c==null?`<p class="note" style="margin-top:8px">${f.store} ما نشر الكارب والدهون لهذا الصنف.</p>`:""}

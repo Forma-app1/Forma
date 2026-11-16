@@ -515,3 +515,4 @@ html,body{overscroll-behavior-y:none}
 .xtra button{flex:1;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line) inset}
 .xtra button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);box-shadow:0 0 0 1.5px var(--accent) inset}
 .xtra small{font-weight:500;color:var(--muted);margin-inline-start:4px}
+.est{font-style:normal;font-size:10px;opacity:.75;border:1px solid currentColor;border-radius:6px;padding:0 4px;margin-inline-start:2px}
