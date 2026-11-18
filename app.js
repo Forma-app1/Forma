@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.9.5";
+const VER="4.10.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -1048,34 +1048,135 @@ function openDone(h,title,nx){
 /* ===== بطاقات المشاركة ===== */
 function svgImg(el,w,h,color){return new Promise(res=>{if(!el)return res(null);const c=el.cloneNode(true);c.setAttribute("xmlns","http://www.w3.org/2000/svg");c.setAttribute("width",w);c.setAttribute("height",h);c.removeAttribute("class");
   let t=new XMLSerializer().serializeToString(c).replace(/currentColor/g,color);const im=new Image();im.onload=()=>res(im);im.onerror=()=>res(null);im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(t)})}
-async function cardBase(){
-  const W=1080,H=1920,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+async function cardBase(o){
+  o=o||{};const P=o.pal||null,W=o.W||1080,H=o.H||1920,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   try{await Promise.all(["800 90px Alexandria","700 40px Alexandria","700 40px Almarai","400 36px Almarai"].map(f=>document.fonts.load(f)))}catch(e){}
-  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,"#010101");g.addColorStop(1,"#162329");x.fillStyle=g;x.fillRect(0,0,W,H);
-  const rg=x.createRadialGradient(W*0.85,H*0.12,10,W*0.85,H*0.12,700);rg.addColorStop(0,"rgba(141,169,173,.34)");rg.addColorStop(1,"rgba(141,169,173,0)");x.fillStyle=rg;x.fillRect(0,0,W,H);
-  const lg=document.querySelector("#hdr .logo");const mk=await svgImg(lg&&lg.querySelector(".mk"),150,150,"#fff"),wm=await svgImg(lg&&lg.querySelector(".wm"),348,60,"#DBEAE5");
-  if(mk)x.drawImage(mk,90,110,150,150);if(wm)x.drawImage(wm,270,155,348,60);
+  if(o.bg!=="none"){
+    const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,P?P.bg0:"#010101");g.addColorStop(1,P?P.bg1:"#162329");x.fillStyle=g;x.fillRect(0,0,W,H);
+    const rg=x.createRadialGradient(W*0.85,H*0.12,10,W*0.85,H*0.12,700);rg.addColorStop(0,P?P.glow:"rgba(141,169,173,.34)");rg.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=rg;x.fillRect(0,0,W,H);
+  }
+  if(o.photo)drawCover(x,o.photo,W,H);
+  if(o.shadow){x.shadowColor="rgba(0,0,0,.6)";x.shadowBlur=18}
+  const lg=document.querySelector("#hdr .logo");const mk=await svgImg(lg&&lg.querySelector(".mk"),150,150,"#fff"),wm=await svgImg(lg&&lg.querySelector(".wm"),348,60,P?P.ink:"#DBEAE5");
+  const ly=o.logoY??110;if(!o.noLogo&&mk)x.drawImage(mk,90,ly,150,150);if(!o.noLogo&&wm)x.drawImage(wm,270,ly+45,348,60);
   x.direction="rtl";x.textAlign="right";
   return {cv,x,W,H};
 }
 const F1='"Alexandria","Almarai",sans-serif',F2='"Almarai","Alexandria",sans-serif';
 function txt(x,s,px,y,o){o=o||{};x.font=`${o.w||700} ${px}px ${o.f||F1}`;x.fillStyle=o.c||"#DBEAE5";x.direction=o.dir||"rtl";x.textAlign=o.al||"right";x.fillText(s,o.x??990,y,o.max||900)}
 function rr(x,X,Y,w,h,r,fill){x.beginPath();x.roundRect?x.roundRect(X,Y,w,h,r):x.rect(X,Y,w,h);x.fillStyle=fill;x.fill()}
-function statBoxes(x,y,items){const w=280,gap=30;items.forEach((it,i)=>{const X=990-w-(i*(w+gap));rr(x,X,y,w,200,36,"rgba(255,255,255,.06)");txt(x,it[0],76,y+105,{x:X+w/2,al:"center",dir:"ltr",w:800});txt(x,it[1],34,y+160,{x:X+w/2,al:"center",c:"#8DA9AD",f:F2,w:400})})}
-function cardFoot(x,H){txt(x,"سجّل أكلك وتمرينك بالعربي",40,H-210,{c:"#8DA9AD",f:F2,w:700});txt(x,"forma-app1.github.io/Forma",40,H-150,{c:"#5FD8CB",dir:"ltr",w:700})}
+function statBoxes(x,y,items,P){const w=280,gap=30;items.forEach((it,i)=>{const X=990-w-(i*(w+gap));const sb=x.shadowBlur;x.shadowBlur=0;rr(x,X,y,w,200,36,P?P.box:"rgba(255,255,255,.06)");x.shadowBlur=sb;txt(x,it[0],76,y+105,{x:X+w/2,al:"center",dir:"ltr",w:800,c:P?P.ink:undefined});txt(x,it[1],34,y+160,{x:X+w/2,al:"center",c:P?P.mut:"#8DA9AD",f:F2,w:400})})}
+function cardFoot(x,H,P){txt(x,"سجّل أكلك وتمرينك بالعربي",40,H-210,{c:P?P.mut:"#8DA9AD",f:F2,w:700});txt(x,"forma-app1.github.io/Forma",40,H-150,{c:P?P.acc:"#5FD8CB",dir:"ltr",w:700})}
+/* صورة المستخدم تغطي البطاقة كاملة (مثل object-fit: cover) */
+function drawCover(x,im,W,H){const s=Math.max(W/im.width,H/im.height),w=im.width*s,h=im.height*s;x.drawImage(im,(W-w)/2,(H-h)/2,w,h)}
+/* ألوان البطاقة: ذهبي للمؤسسين */
+function sharePal(){const f=fnd();return f?{acc:"#F2C960",mut:"#CDBB8C",ink:"#FFF4D6",bg0:"#0A0804",bg1:"#2E2410",glow:"rgba(242,201,96,.32)",box:"rgba(255,222,140,.09)",f}
+  :{acc:"#5FD8CB",mut:"#8DA9AD",ink:"#DBEAE5",bg0:"#010101",bg1:"#162329",glow:"rgba(141,169,173,.34)",box:"rgba(255,255,255,.06)",f:null}}
+function fndBadge(x,P,y){if(!P.f)return;const s="★ عضو مؤسس"+(P.f.n?" #"+P.f.n:"");x.font=`800 34px ${F1}`;const w=x.measureText(s).width+56,sb=x.shadowBlur;x.shadowBlur=0;
+  rr(x,990-w,y,w,72,36,"rgba(242,201,96,.16)");x.strokeStyle="rgba(242,201,96,.6)";x.lineWidth=2;x.stroke();x.shadowBlur=sb;txt(x,s,34,y+48,{x:990-28,c:"#F2C960",w:800})}
+/* تفاصيل التمرين: أفضل مجموعة لكل تمرين، والتطور عن آخر مرة، وتمارين الأسبوع */
+function wkInfo(h){
+  const i=S.history.indexOf(h),prev=S.history.slice(0,i<0?S.history.length:i);
+  const top=ss=>ss.reduce((a,b)=>(b[0]>a[0]||(b[0]===a[0]&&b[1]>a[1]))?b:a,ss[0]);
+  const rows=Object.entries(h.sets).filter(e=>e[1]&&e[1].length).map(([n,ss])=>{const t=top(ss);let up="";
+    for(let j=prev.length-1;j>=0;j--){const p=prev[j].sets&&prev[j].sets[n];if(p&&p.length){const q=top(p);if(t[0]>q[0])up="▲ +"+r1(t[0]-q[0])+" kg";else if(t[0]===q[0]&&t[1]>q[1])up="▲ +"+(t[1]-q[1])+" reps";break}}
+    return {n,t,up}});
+  const d=parseKey(h.date),ws=key(addDays(d,-d.getDay()));
+  const done=S.history.filter(z=>z.date>=ws&&z.date<=h.date).length+(i<0?1:0);
+  return {rows,done,plan:(getProg(h.prog)||{}).days||0,nsets:Object.values(h.sets).reduce((a,s)=>a+s.length,0)};
+}
+function weekDots(x,P,y,info){const n=Math.max(info.plan,info.done);
+  txt(x,info.plan?`التمرين ${info.done} من ${info.plan} هالأسبوع`:`${info.done} ${info.done===1?"تمرين":"تمارين"} هالأسبوع`,40,y,{c:P.ink,f:F2,w:700});
+  if(n>0&&n<=7){const r=22,gap=26;for(let k=0;k<n;k++){const cx=990-r-k*(2*r+gap),cy=y+62;x.beginPath();x.arc(cx,cy,r,0,7);
+    if(k<info.done){x.fillStyle=P.acc;x.fill()}else{const sb=x.shadowBlur;x.shadowBlur=0;x.strokeStyle=P.mut;x.lineWidth=4;x.stroke();x.shadowBlur=sb}}}}
+function liftRows(x,P,y,rows,max,bottom){
+  rows.slice(0,max).forEach(r=>{if(bottom&&y>bottom)return;const s=r.t[0]?r.t[0]+"×"+r.t[1]:r.t[1]+" reps";
+    x.font=`700 40px ${F1}`;const w1=x.measureText(s).width;x.font=`800 32px ${F1}`;const w2=r.up?x.measureText(r.up).width+28:0;
+    const sb=x.shadowBlur;x.shadowBlur=0;x.fillStyle="rgba(255,255,255,.1)";x.fillRect(90,y+34,900,2);x.shadowBlur=sb;
+    txt(x,r.n,40,y,{x:90,al:"left",dir:"ltr",w:700,max:Math.max(260,860-w1-w2),c:P.ink});
+    txt(x,s,40,y,{x:990,al:"right",dir:"ltr",c:P.mut});
+    if(r.up)txt(x,r.up,32,y,{x:990-w1-28,al:"right",dir:"ltr",c:P.acc,w:800});
+    y+=96});return y}
+async function drawWorkout(h,title,mode,photo){
+  const P=sharePal(),info=wkInfo(h),pg=(getProg(h.prog)||{ar:""}).ar;
+  const boxes=[[String(h.dur??"-"),"دقيقة"],[String(info.nsets),"مجموعة"],[fmt(h.vol),"كغ رفعتها"]];
+  const pr=h.prs&&h.prs.length?h.prs[0]+" · "+Math.max(...h.sets[h.prs[0]].map(s=>s[0]))+" kg":"";
+  const prRow=(x,y,dark)=>{const sb=x.shadowBlur;x.shadowBlur=0;rr(x,90,y-70,900,110,30,dark?"rgba(0,0,0,.4)":(P.f?"rgba(242,201,96,.16)":"rgba(95,216,203,.16)"));x.shadowBlur=sb;
+    txt(x,"رقم قياسي جديد",44,y,{c:P.acc,w:800});txt(x,pr,40,y,{x:130,al:"left",dir:"ltr",max:480,c:P.ink})};
+  if(mode==="sticker"){
+    const {cv,x}=await cardBase({pal:P,bg:"none",W:1080,H:1500,shadow:true,logoY:40});
+    fndBadge(x,P,80);
+    txt(x,"خلصت "+title,96,330,{w:800,c:P.ink});txt(x,pg,40,400,{c:P.acc});
+    statBoxes(x,450,boxes.map(b=>b),{...P,box:"rgba(0,0,0,.38)"});
+    weekDots(x,P,760,info);
+    let y=950;if(pr){prRow(x,y,true);y+=140}
+    liftRows(x,P,y,info.rows,pr?3:4);
+    return cv;
+  }
+  if(mode==="photo"&&photo){
+    const {cv,x,W,H}=await cardBase({pal:P,bg:"none",photo,noLogo:true});
+    let g=x.createLinearGradient(0,0,0,420);g.addColorStop(0,"rgba(0,0,0,.6)");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(0,0,W,420);
+    const lg=document.querySelector("#hdr .logo");const mk=await svgImg(lg&&lg.querySelector(".mk"),150,150,"#fff"),wm=await svgImg(lg&&lg.querySelector(".wm"),348,60,P.ink);
+    if(mk)x.drawImage(mk,90,90,150,150);if(wm)x.drawImage(wm,270,135,348,60);fndBadge(x,P,128);
+    g=x.createLinearGradient(0,H*0.45,0,H);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(0.45,"rgba(0,0,0,.6)");g.addColorStop(1,"rgba(0,0,0,.9)");x.fillStyle=g;x.fillRect(0,H*0.45,W,H*0.55);
+    x.shadowColor="rgba(0,0,0,.5)";x.shadowBlur=12;
+    let y=H-860;if(pr){prRow(x,y,true);y+=130}else y+=60;
+    txt(x,"خلصت "+title,96,y+40,{w:800,c:"#fff"});txt(x,pg,40,y+110,{c:P.acc});
+    statBoxes(x,H-640,boxes,{...P,box:"rgba(0,0,0,.42)",ink:"#fff"});
+    weekDots(x,{...P,ink:"#fff"},H-340,info);
+    txt(x,"forma-app1.github.io/Forma",36,H-120,{c:P.acc,dir:"ltr",w:700});
+    return cv;
+  }
+  const {cv,x,H}=await cardBase({pal:P});
+  fndBadge(x,P,150);
+  txt(x,dateAr(h.date),40,400,{c:P.mut,f:F2});
+  txt(x,"خلصت "+title,96,510,{w:800,c:P.ink});
+  txt(x,pg,40,580,{c:P.acc});
+  statBoxes(x,650,boxes,P);
+  weekDots(x,P,950,info);
+  let y=1150;if(pr){prRow(x,y,false);y+=140}
+  liftRows(x,P,y,info.rows,7,H-330);
+  cardFoot(x,H,P);
+  return cv;
+}
+function loadPhoto(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=()=>{URL.revokeObjectURL(u);rej()};im.src=u})}
 async function shareWorkout(h,title){
-  const {cv,x,W,H}=await cardBase();
-  txt(x,dateAr(h.date),40,400,{c:"#8DA9AD",f:F2});
-  txt(x,"خلصت "+title,96,510,{w:800});
-  txt(x,(getProg(h.prog)||{ar:""}).ar,40,580,{c:"#5FD8CB"});
-  const nsets=Object.values(h.sets).reduce((a,s)=>a+s.length,0);
-  statBoxes(x,650,[[String(h.dur??"-"),"دقيقة"],[String(nsets),"مجموعة"],[fmt(h.vol),"كغ رفعتها"]]);
-  let y=960;
-  if(h.prs&&h.prs.length){rr(x,90,y-70,900,110,30,"rgba(95,216,203,.16)");txt(x,"رقم قياسي جديد: ",44,y,{c:"#5FD8CB",w:800});txt(x,h.prs[0]+" · "+Math.max(...h.sets[h.prs[0]].map(s=>s[0]))+" kg",40,y,{x:130,al:"left",dir:"ltr",max:560});y+=140}
-  Object.entries(h.sets).slice(0,7).forEach(([n,ss])=>{const top=ss.reduce((a,b)=>b[0]>a[0]?b:a,ss[0]);
-    x.fillStyle="rgba(255,255,255,.08)";x.fillRect(90,y+34,900,2);
-    txt(x,n,40,y,{x:90,al:"left",dir:"ltr",w:700,max:640});txt(x,top[0]?top[0]+"×"+top[1]:top[1]+" reps",40,y,{x:990,al:"right",dir:"ltr",c:"#8DA9AD"});y+=96});
-  cardFoot(x,H);openShare(cv,"forma-workout.png","خلصت تمريني مع FORMA");
+  const st={mode:"card",photo:null,blob:null,url:null};
+  const canClip=!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
+  sheet((sh,close)=>{sh.setAttribute("aria-label","شارك تمرينك");
+    sh._onclose=()=>{if(st.url)setTimeout(()=>URL.revokeObjectURL(st.url),500)};
+    sh.innerHTML=`<div class="grab"></div><h2>وحش!</h2>
+      <div class="seg" style="grid-template-columns:repeat(3,1fr);margin:10px 0 2px">
+        <button type="button" data-sm="card" aria-pressed="true">بطاقة</button>
+        <button type="button" data-sm="sticker" aria-pressed="false">ستيكر<small>فوق صورتك</small></button>
+        <button type="button" data-sm="photo" aria-pressed="false">صورتك<small>كاميرا أو ألبوم</small></button></div>
+      <input type="file" accept="image/*" id="shPick" hidden>
+      <img alt="بطاقة تمرينك" class="share-img" id="shImg">
+      <div class="grid2" style="margin-top:12px"><button class="primary" id="shGo">${ICON.share} شارك</button><a class="btn" id="shDl" download="forma-workout.png">احفظ الصورة</a></div>
+      ${canClip?`<button id="shCp" style="width:100%;margin-top:8px" hidden>انسخ الستيكر</button>`:""}
+      <p class="note" id="shNote" style="margin-top:8px"></p>`;
+    const img=sh.querySelector("#shImg"),go=sh.querySelector("#shGo"),dl=sh.querySelector("#shDl"),cp=sh.querySelector("#shCp"),note=sh.querySelector("#shNote"),pick=sh.querySelector("#shPick");
+    const render=async()=>{
+      const cv=await drawWorkout(h,title,st.mode,st.photo);
+      const blob=await new Promise(r=>cv.toBlob(r,"image/png"));if(!blob)return toast("ما قدرنا نسوي الصورة");
+      if(st.url)URL.revokeObjectURL(st.url);st.blob=blob;st.url=URL.createObjectURL(blob);
+      img.src=st.url;img.classList.toggle("trans",st.mode==="sticker");
+      const name=st.mode==="sticker"?"forma-sticker.png":"forma-workout.png";dl.href=st.url;dl.download=name;
+      st.file=new File([blob],name,{type:"image/png"});
+      const can=!!(navigator.canShare&&navigator.canShare({files:[st.file]}));go.hidden=!can;dl.classList.toggle("primary",!can);
+      if(cp)cp.hidden=st.mode!=="sticker";
+      note.textContent=st.mode==="sticker"?"انسخ الستيكر والصقه في الستوري فوق صورتك، أو احفظه وأضفه من الملصقات.":(can?"":"على الآيفون: اضغط مطول على الصورة واختر حفظ.");
+    };
+    const setMode=m=>{st.mode=m;sh.querySelectorAll("[data-sm]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sm===m));render()};
+    sh.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+      if(b.dataset.sm){if(b.dataset.sm==="photo"&&!st.photo){pick.click();return}if(b.dataset.sm==="photo"&&st.mode==="photo"){pick.click();return}setMode(b.dataset.sm);return}
+      if(b.id==="shGo"&&st.file){try{await navigator.share({files:[st.file],title:"خلصت تمريني مع FORMA"})}catch(err){}}
+      if(b.id==="shCp"&&st.blob){try{await navigator.clipboard.write([new ClipboardItem({"image/png":st.blob})]);toast("انسخ. الصقه في الستوري")}catch(err){toast("ما قدرنا ننسخ. احفظ الصورة بدالها")}}
+    });
+    pick.addEventListener("change",async()=>{const f=pick.files&&pick.files[0];pick.value="";if(!f)return;
+      try{st.photo=await loadPhoto(f);setMode("photo")}catch(err){toast("ما قدرنا نفتح الصورة")}});
+    render();
+  });
 }
 async function shareProgress(){
   const p=S.profile,cw=currentWeight(),startW=p.startW||p.w,diff=r1(cw-startW),days=Math.max(1,daysBetween(p.start||today(),today())+1);

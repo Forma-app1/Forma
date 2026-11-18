@@ -516,3 +516,5 @@ html,body{overscroll-behavior-y:none}
 .xtra button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);box-shadow:0 0 0 1.5px var(--accent) inset}
 .xtra button{padding-inline:6px}.xtra small{display:block;font-weight:500;color:var(--muted);font-size:11px}
 .est{font-style:normal;font-size:10px;opacity:.75;border:1px solid currentColor;border-radius:6px;padding:0 4px;margin-inline-start:2px}
+/* 4.10 مشاركة التمرين: معاينة الستيكر الشفاف على مربعات */
+.share-img.trans{background:repeating-conic-gradient(#2a3236 0 25%,#1b2124 0 50%) 0 0/24px 24px}
