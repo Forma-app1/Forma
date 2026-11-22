@@ -1,0 +1,48 @@
+name: flutter
+on:
+  push:
+    branches: [flutter]
+    paths: ["flutter_app/**", "foods.js", "tools/export-flutter.js", ".github/workflows/flutter.yml"]
+  workflow_dispatch:
+concurrency:
+  group: flutter-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Export foods from foods.js
+        working-directory: .
+        run: node tools/export-flutter.js && git diff --exit-code flutter_app/assets/foods.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate platform folders
+        run: |
+          flutter create --platforms=android,ios --org sa.forma --project-name forma .
+          rm -f test/widget_test.dart
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q "android.permission.INTERNET" $M || sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
+          sed -i 's#android:label="forma"#android:label="FORMA"#' $M
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forma-android
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
