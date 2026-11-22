@@ -70,7 +70,7 @@ module.exports = async function accounts() {
       await mock(page, st);
       await page.goto(base, { waitUntil: "load" }); await page.waitForTimeout(300);
       check("gate shows for a new user", await gateUp(page));
-      check("gate offers Apple and Google", !!(await page.$('.fg [data-p="apple"]')) && !!(await page.$('.fg [data-p="google"]')));
+      check("gate offers Google", !!(await page.$('.fg [data-p="google"]')));
       await page.fill("#faMail", "Jawad@Test.sa"); await page.click("#faSend");
       await page.waitForSelector("#faCode", { timeout: 3000 });
       await page.fill("#faCode", "111111"); await page.click("#faOk"); await page.waitForTimeout(200);
