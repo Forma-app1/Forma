@@ -116,7 +116,7 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.10.1";
+const VER="4.10.2";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
@@ -621,10 +621,14 @@ function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return 
   const free=l>0?(d<=1?" آخر يوم مجاني.":d===2?" باقي يومين مجانا.":" باقي "+d+" أيام مجانا."):"";
   if(seatsLeft===0)return `<a class="trial" href="${T.buy}" target="_blank" rel="noopener"><span><b>اشترِ فورما مرة وحدة</b><small>بدون اشتراك، وكل بياناتك تبقى معك.${free}</small></span><i>اشترِ ‹</i></a>`;
   return `<a class="trial fnd-offer" href="${T.buy}" target="_blank" rel="noopener"><span><b>عضوية المؤسسين · <em id="fndSeats">${seatsTxt()}</em></b><small>34.99 مرة وحدة، مدى الحياة. وخصم 50% دائم على أي ميزة جديدة.${free}</small></span><i>انضم ‹</i></a>`}
-function founderCard(){const f=fnd();if(!f)return "";
+/* ترحيب بعد التفعيل: "ياهلا ونورت" لمدة يوم واحد من وقت التفعيل، بعدها يختفي */
+const HI_KEY="forma_hi";
+function hiLeft(){let t=0;try{t=+localStorage.getItem(HI_KEY)||0}catch(e){}return t&&Date.now()-t<864e5}
+function founderCard(){const f=fnd(),hi=CL&&CL.code&&CL.code()&&hiLeft();if(!f&&!hi)return "";
+  const welcome=hi?`<div class="card fnd-card stack"><div class="row"><h2>ياهلا ونورت</h2><span class="fnd-badge" aria-hidden="true">★</span></div></div>`:"";
+  if(!f)return welcome;
   const wa="https://wa.me/966550496981?text="+encodeURIComponent("أنا عضو مؤسس في فورما"+(f.n?" #"+f.n:"")+". عندي طلب: ");
-  return `<div class="card fnd-card stack"><div class="row"><h2>عضو مؤسس${f.n?` <span class="num">#${f.n}</span>`:""}</h2><span class="fnd-badge" aria-hidden="true">★</span></div>
-    <ul class="fnd-l"><li>فورما مدى الحياة بدون اشتراك، مع كل تحديثات الميزات الحالية</li><li>خصم 50% دائم على أي ميزة أو باقة مدفوعة جديدة</li><li>أول من يجرب الميزات الجديدة</li><li>طلبات الأكلات والمطاعم منك لها أولوية</li></ul>
+  return `${welcome}<div class="card stack">
     <label class="row fnd-sw"><span>الثيم الذهبي للمؤسسين</span><input type="checkbox" id="goldT" ${S.gold?"checked":""}></label>
     <a class="btn" href="${wa}" target="_blank" rel="noopener">اطلب أكلة أو ميزة</a></div>`}
 const APP_URL="https://forma-app1.github.io/Forma/";
@@ -1647,7 +1651,7 @@ $("#view").addEventListener("click",e=>{
 $("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0]);
   if(e.target.dataset&&e.target.dataset.nt){S.notif=Object.assign(notifPrefs(),{[e.target.dataset.nt]:e.target.checked});save();if(pushSub)CL.pushSave(pushSub.toJSON(),S.notif).catch(()=>{});PF.haptic("light")}
   if(e.target.id==="goldT"){S.gold=e.target.checked;save();applyGold();PF.haptic("light")}});
-window.addEventListener("forma:activated",()=>refreshPlan(true));
+window.addEventListener("forma:activated",()=>{try{localStorage.setItem(HI_KEY,String(Date.now()))}catch(e){}refreshPlan(true)});
 $("#view").addEventListener("input",e=>{
   if(e.target.id==="sayIn"){q=e.target.value;return renderResults()}
   if(e.target.dataset.ed&&ed){const [f,si,i]=e.target.dataset.ed.split("|");const v=e.target.value;
