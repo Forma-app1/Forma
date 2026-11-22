@@ -116,13 +116,13 @@ function saveLocal(){if(!PF.saveJSON(STORE,S))toast("ما قدرنا نحفظ. �
 function save(){S._ts=Date.now();saveLocal();if(CL)CL.sync.changed();pingUsage()}
 const day=k=>(S.days[k]=S.days[k]||{food:[],weight:null});
 /* عداد الاستخدام: يرسل مرة باليوم، ويتحدث لو سجّل أكل أو تمرين. النسخة الخاصة ما ترسل */
-const VER="4.10.2";
+const VER="5.0.0";
 function pingUsage(){
   if(!CL||!CL.ping||CFG.store)return;
   try{if(navigator.onLine===false)return;
     const T=key(new Date()),d=S.days[T]||{},o={prof:!!S.profile,food:!!(d.food||[]).length,train:trainedOn(T)};
     o.step=S.profile?5:Math.min(5,+(PF.loadJSON("forma_stp")||0));
-    const sig=[T,+!!CL.code(),+o.prof,+o.food,+o.train,o.step].join("");
+    const sig=[T,+CL.active(),+o.prof,+o.food,+o.train,o.step].join("");
     if(PF.loadJSON("forma_ping")===sig)return;
     PF.saveJSON("forma_ping",sig);
     const ua=navigator.userAgent||"";
@@ -250,7 +250,7 @@ const instGet=k=>{try{return+localStorage.getItem("forma-inst-"+k)||0}catch(e){r
 const instSet=k=>{try{localStorage.setItem("forma-inst-"+k,String(Date.now()))}catch(e){}};
 /* النسخة العامة: اللي ما فعّل يثبت التطبيق أول، والكود يكتبه داخل التطبيق (مو في سفاري) */
 /* النسخة العامة فقط فيها gate.js (يعرّف FORMA_TRIAL) */
-const mustInstall=()=>!!window.FORMA_TRIAL&&!localStorage.getItem("forma_lic");
+const mustInstall=()=>!!window.FORMA_TRIAL&&window.FORMA_TRIAL.left()!==null;
 const needGate=()=>{const k=instKind();return !!k&&(k!=="prompt"||isAndroid)&&(!instGet("skip")||mustInstall())};
 const IIC={
   share:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>`,
@@ -609,12 +609,12 @@ async function notifOff(){try{if(pushSub){const ep=pushSub.endpoint;await pushSu
 
 /* ===== عضوية المؤسسين ===== */
 let seatsLeft=null;
-const fnd=()=>{const p=CL&&CL.plan&&CL.code&&CL.code()?CL.plan():null;return p&&(p.plan==="founder"||p.plan==="admin")?p:null};
+const fnd=()=>{const p=CL&&CL.plan&&CL.active()?CL.plan():null;return p&&(p.plan==="founder"||p.plan==="admin")?p:null};
 function applyGold(){document.documentElement.toggleAttribute("data-gold",!!(fnd()&&S.gold))}
-function refreshPlan(force){if(!CL||!CL.info||!CL.code())return applyGold();const p=CL.plan();applyGold();
+function refreshPlan(force){if(!CL||!CL.info||!(CL.active()||CL.acc()))return applyGold();const p=CL.plan();applyGold();
   if(!force&&p&&Date.now()-(p.t||0)<864e5)return;
   CL.info().then(r=>{if(!r)return;applyGold();if(tab==="settings"||tab==="today")render()})}
-function refreshSeats(){if(!CL||!CL.foundersLeft||CL.code()||!window.FORMA_TRIAL)return;
+function refreshSeats(){if(!CL||!CL.foundersLeft||CL.active()||!window.FORMA_TRIAL)return;
   CL.foundersLeft().then(n=>{if(n==null||n===seatsLeft)return;seatsLeft=n;const el=$("#fndSeats");if(el)el.textContent=seatsTxt()})}
 const seatsTxt=()=>seatsLeft==null?"أول 100 مشترك":seatsLeft>0?`باقي ${seatsLeft} من 100`:"اكتملت";
 function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return "";const d=Math.ceil(l/864e5);
@@ -624,7 +624,7 @@ function trialCard(){const T=window.FORMA_TRIAL,l=T&&T.left();if(l==null)return 
 /* ترحيب بعد التفعيل: "ياهلا ونورت" لمدة يوم واحد من وقت التفعيل، بعدها يختفي */
 const HI_KEY="forma_hi";
 function hiLeft(){let t=0;try{t=+localStorage.getItem(HI_KEY)||0}catch(e){}return t&&Date.now()-t<864e5}
-function founderCard(){const f=fnd(),hi=CL&&CL.code&&CL.code()&&hiLeft();if(!f&&!hi)return "";
+function founderCard(){const f=fnd(),hi=CL&&CL.active()&&hiLeft();if(!f&&!hi)return "";
   const welcome=hi?`<div class="card fnd-card stack"><div class="row"><h2>ياهلا ونورت</h2><span class="fnd-badge" aria-hidden="true">★</span></div></div>`:"";
   if(!f)return welcome;
   const wa="https://wa.me/966550496981?text="+encodeURIComponent("أنا عضو مؤسس في فورما"+(f.n?" #"+f.n:"")+". عندي طلب: ");
@@ -1432,7 +1432,7 @@ function vSettings(){
   <div class="card stack"><h2>عط خويك فورما</h2><p class="note">أرسل له الرابط وخله يجربه.</p><button id="shareApp">شارك فورما</button></div>
   <div class="card stack"><h2>بياناتي</h2><button data-go="setup">عدّل الطول والوزن والهدف</button>
     <div class="grid2"><button id="exportB">نسخة احتياطية</button><button id="importB">استرجاع نسخة</button></div><input type="file" id="importF" accept="application/json,.json" hidden>
-    <p class="note">${CL&&CL.code()?"بياناتك محفوظة بالسحابة. النسخة الاحتياطية أمان زيادة.":"بياناتك محفوظة على جهازك بس. خذ نسخة احتياطية قبل ما تغيّر جوالك."}</p>
+    <p class="note">${CL&&CL.active()?"بياناتك محفوظة بالسحابة. النسخة الاحتياطية أمان زيادة.":"بياناتك محفوظة على جهازك بس. خذ نسخة احتياطية قبل ما تغيّر جوالك."}</p>
     <button id="cycleB">${cycleArmed?"متأكد؟ اضغط مرة ثانية":"ابدأ دورة جديدة"}</button>
     <p class="note">الدورة الجديدة تمسح سجل الأكل والوزن والتمارين وتبدأك من اليوم. ملفك وأكلاتي ووجباتي تبقى.</p></div>
   <div class="card stack"><h2>مصادر القيم</h2><div class="list">${Object.entries(SOURCES).map(([s,v])=>`<div class="item"><span class="n">${s}<small>${esc(v[0])}</small></span><span class="pill ${v[1].startsWith("رسمي")?"":"mute"}">${v[1]}</span></div>`).join("")}</div><p class="note">رسمي = منشور في موقع المتجر السعودي. تقديري = محسوب من مصادر مشابهة.</p></div>
@@ -1442,15 +1442,29 @@ function vSettings(){
 /* ===== السحابة ===== */
 let syncState="off";
 const SYNC_L={big:"البيانات كبيرة، كلمنا",ok:"محفوظة ✓",syncing:"يزامن...",offline:"بدون نت",error:"ما تزامنت",nolic:"الكود موقف",off:"مو مربوط"};
+let accDelArmed=false;
 function cloudCard(){
   if(!CL)return "";
+  const st=`<span class="pill ${syncState==="ok"?"":"mute"}" id="syncSt">${SYNC_L[syncState]||""}</span>`;
+  const stats=CFG.store&&CL.stats&&CL.code()?`<button class="wide" id="statsB">لوحة المستخدمين</button>`:"";
+  if(CL.acc()){
+    const p=CL.plan(),none=!!(p&&p.acc&&p.plan==="none");
+    return `<div class="card stack" id="cloudCard"><div class="row"><h2>حسابك</h2>${none?"":st}</div>
+      <p class="sub" dir="ltr" style="text-align:right">${esc(CL.email()||"")}</p>
+      ${none?`<p class="note">حسابك بدون عضوية. فعّلها بكود الشراء:</p>
+      <div class="row"><input type="text" id="licIn" placeholder="FM-XXXXX-XXXXX" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" class="lic-in" aria-label="كود الشراء"><button class="primary" id="licGo">فعّل</button></div>`
+      :`<p class="note">بياناتك تنحفظ في حسابك، وتفتحها من أي جهاز بنفس الدخول.</p>`}
+      <div class="row">${none?"":`<button class="ghost" id="syncNow">زامن الحين</button>`}<button class="ghost" id="accOut">تسجيل خروج</button></div>${stats}
+      <details><summary>حذف الحساب ‹</summary><p class="note" style="margin:8px 0">يحذف حسابك وبياناتك من السحابة نهائيا، وكود الشراء يتفك ويقدر ينربط بحساب جديد. بيانات هذا الجهاز تبقى.</p>
+        <button class="danger wide" id="accDel">${accDelArmed?"متأكد؟ اضغط مرة ثانية":"احذف حسابي"}</button></details></div>`;
+  }
   const c=CL.code();
-  if(!c)return `<div class="card stack" id="cloudCard"><h2>احفظ بياناتك بالسحابة</h2><p class="note">اربط كود التفعيل، وبياناتك تنحفظ وترجع لك لو غيّرت جوالك. ويفتح لك تصوير الأكل.</p>
-    <div class="row"><input type="text" id="licIn" placeholder="FM-XXXXX-XXXXX" dir="ltr" autocomplete="off" autocapitalize="characters" spellcheck="false" class="lic-in" aria-label="كود التفعيل"><button class="primary" id="licGo">اربط</button></div></div>`;
-  return `<div class="card stack" id="cloudCard"><div class="row"><h2>بياناتك بالسحابة</h2><span class="pill ${syncState==="ok"?"":"mute"}" id="syncSt">${SYNC_L[syncState]||""}</span></div>
-    <p class="note">كل تعديل ينحفظ في جهازك ويترفع لحاله. لو غيّرت جوالك، اكتب نفس الكود وترجع لك بياناتك.</p>
-    <div class="row"><span class="sub num" dir="ltr">FM-${esc(c.slice(0,5))}-•••••</span><button class="ghost" id="syncNow">زامن الحين</button></div>${CFG.store&&CL.stats?`<button class="wide" id="statsB">لوحة المستخدمين</button>`:""}</div>`;
+  return `<div class="card stack" id="cloudCard"><div class="row"><h2>${c?"اربط كودك بحساب":"احفظ بياناتك بحساب"}</h2>${c?st:""}</div>
+    <p class="note">${c?`كودك <span class="num" dir="ltr">FM-${esc(c.slice(0,5))}-•••••</span> شغال. سجّل دخول وينربط بحسابك تلقائي، وتفتح بياناتك من أي جهاز.`:"سجّل دخول، وبياناتك تنحفظ وترجع لك لو غيّرت جوالك."}</p>
+    <div id="accLogin"></div>${stats}</div>`;
 }
+/* نحط واجهة الدخول بعد رسم صفحة ملفي */
+function mountAcc(){const el=$("#accLogin");if(el&&window.FORMA_AUTH)FORMA_AUTH.mountLogin(el)}
 /* لوحة المستخدمين (نسخة جواد فقط): أرقام مجمعة من جدول usage */
 function openStats(){
   sheet((sh,close)=>{sh.setAttribute("aria-label","لوحة المستخدمين");
@@ -1501,9 +1515,9 @@ async function linkCode(){
   const i=$("#licIn"),b=$("#licGo");if(!i||!CL)return;
   const v=i.value.trim();if(CL.norm(v).length!==10)return toast("اكتب الكود كامل، مثل FM-XXXXX-XXXXX");
   b.disabled=true;b.textContent="لحظة...";
-  try{const r=await CL.activate(v);
-    if(r==="ok"){PF.haptic("success");render();return toast("انربط كودك. بياناتك صارت تنحفظ بالسحابة")}
-    toast(r==="used"?"الكود مستخدم على جهازين. تواصل معنا":"الكود غير صحيح، تأكد منه")}
+  try{const r=await CL.link(v);
+    if(r==="ok"){PF.haptic("success");render();return toast("تفعّلت عضويتك. بياناتك تنحفظ في حسابك")}
+    toast({taken:"الكود مربوط بحساب ثاني",slow:"محاولات كثيرة. انتظر شوي",devices:"حسابك مفتوح على 3 أجهزة",net:"تأكد إنك متصل بالنت وجرّب"}[r]||"الكود غير صحيح، تأكد منه")}
   catch(e){toast("تأكد إنك متصل بالنت وجرّب")}
   b.disabled=false;b.textContent="اربط";
 }
@@ -1534,6 +1548,7 @@ function render(){
   if(tab!==lastTab){V.classList.remove("vin");void V.offsetWidth;V.classList.add("vin");lastTab=tab}
   if(tab==="plan"){const k=$("#planK");if(k)countUp(k)}
   if(tab==="food")renderResults();
+  if(tab==="settings")mountAcc();
   if(tab!=="train"&&$("#rest"))$("#rest").remove();
   /* نفس الصفحة: نبقى بنفس المكان بدل ما ننط فوق */
   window.scrollTo(0,same?y:0);
@@ -1628,6 +1643,9 @@ $("#view").addEventListener("click",e=>{
     case "notifTest":{if(!pushSub)return;CL.pushTest(pushSub.endpoint).then(r=>toast(r&&r.ok?"وصلك تنبيه تجربة":r&&r.err==="wait"?"انتظر دقيقة وجرب":"ما وصل. تأكد من النت"));return}
     case "progHintX":S.progHint=S.prog+"|"+S.progStart;save();return render();
     case "licGo":return linkCode();
+    case "accOut":if(CL)CL.signOut().then(()=>{render();toast("طلعت من حسابك")});return;
+    case "accDel":if(!accDelArmed){accDelArmed=true;return render()}accDelArmed=false;
+      CL.deleteAccount().then(ok=>{render();toast(ok?"انحذف حسابك":"ما قدرنا نحذفه. تأكد من النت وجرّب")});return;
     case "statsB":return openStats();
     case "shareApp":return shareApp();
     case "syncNow":if(CL){CL.sync.now().then(()=>toast(syncState==="ok"?"تمت المزامنة":"ما قدرنا نزامن، جرّب بعد شوي"))}return;
@@ -1651,6 +1669,9 @@ $("#view").addEventListener("click",e=>{
 $("#view").addEventListener("change",e=>{if(e.target.id==="importF"&&e.target.files[0])importData(e.target.files[0]);
   if(e.target.dataset&&e.target.dataset.nt){S.notif=Object.assign(notifPrefs(),{[e.target.dataset.nt]:e.target.checked});save();if(pushSub)CL.pushSave(pushSub.toJSON(),S.notif).catch(()=>{});PF.haptic("light")}
   if(e.target.id==="goldT"){S.gold=e.target.checked;save();applyGold();PF.haptic("light")}});
+/* تغيّر الحساب: نحدث صفحة ملفي واليوم */
+window.addEventListener("forma:account",()=>{applyGold();if(tab==="settings"||tab==="today")render()});
+window.addEventListener("forma:signedin",()=>{if(tab==="settings")render();toast("هلا! دخلت حسابك")});
 window.addEventListener("forma:activated",()=>{try{localStorage.setItem(HI_KEY,String(Date.now()))}catch(e){}refreshPlan(true)});
 $("#view").addEventListener("input",e=>{
   if(e.target.id==="sayIn"){q=e.target.value;return renderResults()}
@@ -1668,7 +1689,7 @@ document.addEventListener("focusin",e=>{const t=e.target;if(t.tagName==="INPUT"&
 /* المسودات القديمة تنحفظ بعد أول مزامنة، عشان ما نرفع نسخة قديمة فوق شغل جهاز ثاني */
 let settled=false;
 function settleOnce(){if(settled)return;settled=true;if(!S.profile)return;try{settleDrafts();if(tab==="train"||tab==="today")render()}catch(e){}}
-if(!(CL&&CL.code&&CL.code()))settleOnce();
+if(!(CL&&CL.active()))settleOnce();
 render();
 if(fidDirty)saveLocal();
 initSync();
