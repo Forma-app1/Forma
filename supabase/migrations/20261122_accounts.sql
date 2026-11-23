@@ -208,3 +208,24 @@ grant execute on function public.acc_pull(text, text) to authenticated;
 grant execute on function public.acc_push(text, text, jsonb, bigint) to authenticated;
 grant execute on function public.acc_signout_device(text) to authenticated;
 grant execute on function public.acc_delete() to authenticated;
+
+-- ===== الشراء من أبل (التطبيق) =====
+-- دالة الشراء iap-apple تتحقق من العملية عند أبل، بعدها تنادي هذي بصلاحية الخدمة.
+-- الشراء ينحفظ كسطر في licenses (hash = 'apple:' + رقم العملية الأصلي)، فمنطق المؤسسين نفسه يشتغل.
+alter table public.licenses add column if not exists source text not null default 'zid';
+
+create or replace function public.iap_grant(p_user uuid, p_ref text, p_source text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare h text; owner uuid;
+begin
+  if p_user is null or coalesce(p_ref,'') = '' or p_source not in ('apple','google') then return jsonb_build_object('err','bad'); end if;
+  h := p_source || ':' || p_ref;
+  select user_id into owner from licenses where hash = h for update;
+  if found and owner is not null and owner <> p_user then return jsonb_build_object('err','taken'); end if;
+  if not found then insert into licenses(hash, source) values (h, p_source); end if;
+  -- التحديث (مو الإدخال) هو اللي يشغّل منطق المؤسسين
+  update licenses set user_id = p_user, linked_at = coalesce(linked_at, now()), activated_at = coalesce(activated_at, now()) where hash = h;
+  return jsonb_build_object('ok', true, 'plan', public._acc_plan(p_user));
+end $$;
+revoke all on function public.iap_grant(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.iap_grant(uuid, text, text) to service_role;
