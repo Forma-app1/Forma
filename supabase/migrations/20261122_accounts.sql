@@ -229,3 +229,19 @@ begin
 end $$;
 revoke all on function public.iap_grant(uuid, text, text) from public, anon, authenticated;
 grant execute on function public.iap_grant(uuid, text, text) to service_role;
+
+-- ===== تصوير الأكل للحسابات (التطبيق) =====
+-- نفس حد الأكواد اليومي، والعداد باسم 'acc:' + رقم الحساب. تستدعيها food-photo بصلاحية الخدمة.
+create or replace function public.acc_photo_allow(p_user uuid, p_max int default 8) returns text
+language plpgsql security definer set search_path = public as $$
+declare c int;
+begin
+  if p_user is null or public._acc_plan(p_user) is null then return 'nolic'; end if;
+  insert into photo_usage(hash, day, n) values ('acc:' || p_user, (now() at time zone 'Asia/Riyadh')::date, 1)
+  on conflict (hash, day) do update set n = photo_usage.n + 1
+  returning n into c;
+  if c > p_max then return 'limit'; end if;
+  return 'ok';
+end $$;
+revoke all on function public.acc_photo_allow(uuid, int) from public, anon, authenticated;
+grant execute on function public.acc_photo_allow(uuid, int) to service_role;
