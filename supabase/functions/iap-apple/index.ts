@@ -6,10 +6,10 @@
 //   APPLE_ISSUER_ID    من App Store Connect ← Users and Access ← Integrations ← In-App Purchase
 //   APPLE_KEY_ID       رقم المفتاح
 //   APPLE_PRIVATE_KEY  محتوى ملف .p8 كامل
-//   APPLE_BUNDLE_ID    اختياري، الافتراضي sa.forma.app
+//   APPLE_BUNDLE_ID    اختياري، الافتراضي com.alageel.forma
 // SUPABASE_URL و SUPABASE_ANON_KEY و SUPABASE_SERVICE_ROLE_KEY يحطها Supabase تلقائي.
 
-const BUNDLE = Deno.env.get("APPLE_BUNDLE_ID") || "sa.forma.app";
+const BUNDLE = Deno.env.get("APPLE_BUNDLE_ID") || "com.alageel.forma";
 const PRODUCTS = ["sa.forma.app.founder"];
 const SB = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
