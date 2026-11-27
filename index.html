@@ -96,7 +96,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .pill.hot{background:var(--hot-soft);color:var(--hot)}
 .pill.mute{background:var(--track);color:var(--muted)}
 /* inputs */
-input[type=search],input[type=number],input[type=text],input[type=date]{font-family:var(--body);font-size:16px;width:100%;padding:12px 14px;border-radius:14px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--surface);color:var(--ink);min-width:0}
+input[type=search],input[type=number],input[type=text],input[type=date],input[type=email]{font-family:var(--body);font-size:16px;width:100%;padding:12px 14px;border-radius:14px;border:0;box-shadow:0 0 0 1px var(--line) inset;background:var(--surface);color:var(--ink);min-width:0}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label,.flabel{font-size:12.5px;color:var(--muted);font-weight:700}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -242,6 +242,7 @@ input.say-amt{width:96px;text-align:center;padding:8px 10px}
   <button data-tab="progress"><svg viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="M6 15.5l4-5 3 3 5-6.5"/></svg>تقدمي</button>
 </div></nav>
 <script src="lib/platform.js"></script>
+<script src="lib/auth.js"></script>
 <script src="lib/cloud.js"></script>
 <script src="gate.js"></script>
 <script src="foods.js"></script>

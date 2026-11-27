@@ -1,10 +1,11 @@
 // FORMA: تقدير سعرات الأكل من صورة عبر Claude.
 // المفتاح ANTHROPIC_API_KEY ينحط في Secrets حق Supabase، وما يطلع للتطبيق أبد.
-// كل طلب يتأكد من الكود والجهاز، وفيه حد يومي (photo_allow في schema.sql).
+// كل طلب يتأكد من الكود والجهاز، وفيه حد يومي، وللحسابات حد شهري (acc_photo_allow).
 
 const ORIGINS = ["https://forma-app1.github.io", "http://localhost:8765", "capacitor://localhost", "https://localhost"];
 const MODEL = Deno.env.get("FORMA_MODEL") || "claude-haiku-5-5";
 const DAILY = Number(Deno.env.get("FORMA_DAILY") || "8");
+const MONTHLY = Number(Deno.env.get("FORMA_MONTHLY") || "30");
 
 function cors(req: Request) {
   const o = req.headers.get("origin") || "";
@@ -42,7 +43,9 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return json({ error: "bad" }, 400); }
   const { code, device, image } = body || {};
   const type = ["image/jpeg", "image/png", "image/webp"].includes(body?.type) ? body.type : "image/jpeg";
-  if (typeof code !== "string" || typeof device !== "string" || typeof image !== "string" || image.length < 100 || image.length > 2_000_000) {
+  // التطبيق يرسل توكن الحساب بدل الكود
+  const byAccount = typeof code !== "string";
+  if ((!byAccount && typeof device !== "string") || typeof image !== "string" || image.length < 100 || image.length > 2_000_000) {
     return json({ error: "bad" }, 400);
   }
 
@@ -50,13 +53,19 @@ Deno.serve(async (req) => {
   if (!KEY) return json({ error: "nokey" }, 503);
 
   const SB = Deno.env.get("SUPABASE_URL")!, SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const gate = await fetch(`${SB}/rest/v1/rpc/photo_allow`, {
+  let userId: string | null = null;
+  if (byAccount) {
+    const u = await fetch(`${SB}/auth/v1/user`, { headers: { apikey: Deno.env.get("SUPABASE_ANON_KEY")!, Authorization: req.headers.get("authorization") || "" } });
+    if (!u.ok) return json({ error: "nolic" }, 403);
+    userId = (await u.json()).id;
+  }
+  const gate = await fetch(`${SB}/rest/v1/rpc/${byAccount ? "acc_photo_allow" : "photo_allow"}`, {
     method: "POST",
     headers: { apikey: SR, Authorization: `Bearer ${SR}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ p_code: code, p_device: device, p_max: DAILY }),
+    body: JSON.stringify(byAccount ? { p_user: userId, p_max: DAILY, p_month: MONTHLY } : { p_code: code, p_device: device, p_max: DAILY }),
   });
   const ok = gate.ok ? await gate.json() : "server";
-  if (ok !== "ok") return json({ error: ok }, ok === "limit" ? 429 : ok === "nolic" ? 403 : 500);
+  if (ok !== "ok") return json({ error: ok }, ok === "limit" || ok === "month" ? 429 : ok === "nolic" ? 403 : 500);
 
   const ai = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
